@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
 
+import datetime
+import pynmea2
 import strgen
 from flask import (
     Blueprint,
@@ -17,12 +19,38 @@ from motracker.extensions import db
 from motracker.utils import flash_errors
 
 from .forms import ApiForm
-from .models import ApiKey
+from .models import ApiKey, Pointz, Trackz
 
-blueprint = Blueprint("gpsdb", __name__, url_prefix="/gps", static_folder="../static")
+# SUPPORT FUNCTIONS
+
+def parse_rmc(gprmc):
+    """Parsing NMEA-0183 $RMC record into more human set of values.
+
+    Recommended Minimum Specific GPS/TRANSIT Data:
+    parser library: https://github.com/Knio/pynmea2
+    """
+    valuez = pynmea2.parse(gprmc)
+    lat = valuez.latitude
+    lon = valuez.longitude
+    speed = valuez.spd_over_grnd
+    bearing = valuez.true_course
+    timez = datetime.datetime.combine(valuez.datestamp, valuez.timestamp)
+
+    return(
+        timez,
+        lat,
+        lon,
+        speed,
+        bearing
+    )
 
 
-@blueprint.route("/api", methods=["GET", "POST"])
+###########
+# MAIN PART
+blueprint = Blueprint("gpsdb", __name__, url_prefix="/gnss", static_folder="../static")
+
+
+@blueprint.route("/apikey", methods=["GET", "POST"])
 @login_required
 def gpsapi():
     """(re)Generate and/or present API key."""
@@ -51,3 +79,28 @@ def gpsapi():
         "gpsdb/apikey.html",
         form=form,
         apikey=apikey)
+
+@blueprint.route("/data/opengts")
+def opengts():
+    """Receives data from OpenGTS compatible receiver device.
+
+    http://www.opengts.org/OpenGTS_Config.pdf
+    http://www.geotelematic.com/docs/StatusCodes.pdf
+    """
+    id = request.args.get('id')
+    code = request.args.get('code')
+    gprmc = request.args.get('gmprc')
+
+    # parsing id to match GNSS Api
+    haskey = ApiKey.query.filter_by(apikey=id).first()
+    if haskey:
+        user_id = haskey.user_id
+        current_app.logger.info("Found valid API ket belonging to %s." %
+                                haskey.user)
+    else:
+        current_app.logger.info("No user has such an API key. Ignoring request.")
+        return f'Hello?'
+
+    # parsing NMEA-0183 $GPRMC record
+    if code == "0xF020":
+        pass

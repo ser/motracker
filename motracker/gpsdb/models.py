@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
-"""GPS tracks and api models."""
+"""GPS tracks and API models."""
+
+from datetime import datetime
+
+from geoalchemy import GeometryColumn, GeometryDDL, Point, Points
 
 from motracker.database import (
     Column,
@@ -26,3 +30,71 @@ class ApiKey(SurrogatePK, Model):
     def __repr__(self):
         """Represent instance as a unique string."""
         return "<ApiKey({apikey})>".format(apikey=self.apikey)
+
+
+class Trackz(SurrogatePK, Model):
+    """Table with tracks."""
+
+    __tablename__ = "tracks"
+    name = Column(db.String(255), unique=False, nullable=False)
+    user_id = reference_col("users", nullable=True)
+    user = relationship("User", backref="tracks")
+
+    def __init__(self, name, **kwargs):
+        """Create instance."""
+        db.Model.__init__(self, name=name, **kwargs)
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return "<Trackz({name})>".format(name=self.name)
+
+
+class Pointz(SurrogatePK, Model):
+    """Table with points."""
+
+    __tablename__ = "points"
+    timez = Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    track_id = reference_col("tracks", nullable=True)
+    track = relationship("Trackz", backref="points")
+    geom = GeometryColumn(Point(2))
+    altitude = Column(db.Float, unique=False, nullable=True)
+    speed = Column(db.Float, unique=False, nullable=True)
+    bearing = Column(db.Float, unique=False, nullable=True)
+    accuracy = Column(db.Integer, unique=False, nullable=True)
+    provider = Column(db.String(100), unique=False, nullable=True)
+    comment = Column(db.String(255), unique=False, nullable=True)
+
+    GeometryDDL(Points.__table__)
+
+    def __init__(self, timez, track_id, track, geom, altitude, speed, bearing,
+                 accuracy, provider, comment):
+        """Create instance."""
+        db.Model.__init__(
+            self,
+            timez=timez,
+            track_id=track_id,
+            track=track,
+            geom=geom,
+            altitude=altitude,
+            speed=speed,
+            bearing=bearing,
+            accuracy=accuracy,
+            provider=provider,
+            comment=comment
+        )
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return 'timez: {}, track_id: {}, track: {}, geom: {}, altitude: {}, \
+    speed: {}, bearing: {}, accuracy: {}, provider: {}, comment: {}'.format(
+            self.timez,
+            self.track_id,
+            self.track,
+            self.geom,
+            self.altitude,
+            self.speed,
+            self.bearing,
+            self.accuracy,
+            self.provider,
+            self.comment
+        )

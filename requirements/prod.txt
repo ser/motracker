@@ -8,6 +8,7 @@ click>=5.0
 # Database
 Flask-SQLAlchemy>=2.3.2
 SQLAlchemy>=1.3.0
+GeoAlchemy>=0.7.2
 
 # Migrations
 Flask-Migrate>=2.2.1
@@ -39,3 +40,6 @@ environs>=4.0.0
 
 # API creation
 StringGenerator
+
+# Various GPS libraries
+pynmea2>=1.15.0
