@@ -33,6 +33,9 @@ nosetests.xml
 .project
 .pydevproject
 
+# NPM logs
+npm-debug.log
+
 # Complexity
 output/*.html
 output/*/index.html

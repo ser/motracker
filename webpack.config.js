@@ -11,7 +11,7 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const debug = (process.env.NODE_ENV !== 'production');
 
 // Development asset host (webpack dev server)
-const publicHost = debug ? 'http://0.0.0.0:2992' : '';
+const publicHost = debug ? 'http://10.81.3.5:2992' : '';
 
 const rootAssetPath = path.join(__dirname, 'assets');
 
