@@ -14,6 +14,7 @@ from flask import (
 from flask_login import current_user, login_required
 
 from motracker.extensions import db
+from motracker.utils import flash_errors
 
 from .forms import ApiForm
 from .models import ApiKey
@@ -31,14 +32,12 @@ def gpsapi():
     if request.method == "POST":
         if form.validate_on_submit():
             apikey = strgen.StringGenerator("[\w\d]{10}").render()
-            if hasapi:
-                hasapi.apikey = apikey
-                db.session.commit()
-            else:
-                ApiKey.create(
-                    user=current_user,
-                    apikey=apikey
-                )
+            hasapi.apikey = apikey
+            db.session.commit()
+            current_app.logger.info("API key has been changed.")
+            flash("API key has been changed.", "info")
+        else:
+            flash_errors(form)
     # No regeneration request
     if hasapi:
         apikey = hasapi.apikey

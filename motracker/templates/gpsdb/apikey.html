@@ -5,11 +5,12 @@
         <h1>{{ current_user.username }},</h1>
         <h3>this is your secret and unique API key: <kbd>{{ apikey }}</kbd></h3>
         <br/>
-        <form id="registerForm" class="form form-register" method="POST"
-            action="" role="form">
+        <form id="ApiForm" class="form form-api" method="POST" action="" role="form">
             {{ form.csrf_token }}
-            {{ form.confirm.label }}
-            {{ form.confirm }}
+            <div class="form-group">
+                {{ form.confirm.label }}
+                {{ form.confirm }}
+            </div>
             <p><input class="btn btn-primary" type="submit" value="Change API key"></p>
         </form>
     </div>

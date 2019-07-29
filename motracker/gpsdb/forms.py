@@ -2,14 +2,14 @@
 """User forms."""
 from flask_wtf import FlaskForm
 from wtforms import BooleanField
-from wtforms.validators import DataRequired, EqualTo, InputRequired
+from wtforms.validators import InputRequired
 
 class ApiForm(FlaskForm):
     """Change API key form."""
 
     confirm = BooleanField(
         "If you want to re-generate the key, select this checkbox to confirm",
-        validators=[DataRequired(), InputRequired(), EqualTo(True, "You must confirm that you want to change the API key")]
+        validators=[InputRequired()]
     )
 
     def __init__(self, *args, **kwargs):
@@ -22,3 +22,4 @@ class ApiForm(FlaskForm):
         initial_validation = super(ApiForm, self).validate()
         if not initial_validation:
             return False
+        return True
