@@ -32,6 +32,24 @@ class ApiKey(SurrogatePK, Model):
         return "<ApiKey({apikey})>".format(apikey=self.apikey)
 
 
+class Filez(SurrogatePK, Model):
+    """Table with uploaded raw GPX files."""
+
+    __tablename__ = "files"
+    user_id = reference_col("users", nullable=True)
+    user = relationship("User", backref="files")
+    is_public = db.Column(db.Boolean, nullable=False)
+    description = db.Column(db.String, nullable=False)
+
+    def __init__(self, is_public, description, **kwargs):
+        """Create instance."""
+        db.Model.__init__(self, is_public=is_public, description=description, **kwargs)
+
+    def __repr__(self):
+        """Represent instance as a unique string."""
+        return '<id: {}>'.format(self.id)
+
+
 class Trackz(SurrogatePK, Model):
     """Table with tracks."""
 

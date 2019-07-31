@@ -60,3 +60,6 @@ env/
 
 # Development database
 *.db
+
+# until we finish 1.0
+/migrations

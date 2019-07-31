@@ -18,8 +18,8 @@ from flask_login import current_user, login_required
 from motracker.extensions import db
 from motracker.utils import flash_errors
 
-from .forms import ApiForm
-from .models import ApiKey, Pointz, Trackz
+from .forms import AddFileForm, ApiForm
+from .models import ApiKey, Filez, Pointz, Trackz
 
 # SUPPORT FUNCTIONS
 
@@ -79,6 +79,27 @@ def gpsapi():
         "gpsdb/apikey.html",
         form=form,
         apikey=apikey)
+
+
+@blueprint.route("/files", methods=["GET", "POST"])
+@login_required
+def filez():
+    """Upload previously recorded tracks."""
+    form = AddFileForm()
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            dbfile = Filez.create(
+                user=current_user,
+                is_public=form.is_public,
+                description=form.description
+            )
+            current_app.logger.debug(dbfile)
+        else:
+            flash_errors(form)
+    return render_template(
+        "gpsdb/filez.html",
+        form=form)
+
 
 @blueprint.route("/data/opengts")
 def opengts():

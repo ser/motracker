@@ -4,6 +4,7 @@ import logging
 import sys
 
 from flask import Flask, render_template
+from flask_uploads import configure_uploads, patch_request_class
 
 from motracker import commands, gpsdb, public, user
 from motracker.extensions import (
@@ -12,6 +13,7 @@ from motracker.extensions import (
     csrf_protect,
     db,
     debug_toolbar,
+    filez,
     login_manager,
     migrate,
     webpack,
@@ -27,11 +29,17 @@ def create_app(config_object="motracker.settings"):
     app.config.from_object(config_object)
     register_extensions(app)
     register_blueprints(app)
+    register_configuration(app)
     register_errorhandlers(app)
     register_shellcontext(app)
     register_commands(app)
     configure_logger(app)
     return app
+
+
+def register_configuration(app):
+    configure_uploads(app, filez)
+    patch_request_class(app, size=25000000)
 
 
 def register_extensions(app):
