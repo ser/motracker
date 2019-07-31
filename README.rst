@@ -19,11 +19,25 @@ Run the following commands to bootstrap your environment ::
 
 You will see a pretty welcome screen.
 
+Create your postgres database, let's assume 'gnss' and add postgis features ::
+
+    $ sudo -u postgres psql gnss
+    gnss=# CREATE EXTENSION postgis;
+    gnss=# CREATE EXTENSION address_standardizer;
+    gnss=# CREATE EXTENSION fuzzystrmatch;
+    gnss=# CREATE EXTENSION postgis_topology;
+
 Once you have installed your DBMS, run the following to create your app's
 database tables and perform the initial migration ::
 
     flask db init
     flask db migrate
+
+Now, before you proceed, you must update alembic scripts. Alembic does not try
+to determine and render all imports for custom types in the migration scripts.
+Edit the generated script to include ``from geoalchemy2.types import Geometry`` and
+change the column def to just use ``Geometry``. And later ::
+
     flask db upgrade
     npm start
 

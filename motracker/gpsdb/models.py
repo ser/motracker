@@ -3,7 +3,7 @@
 
 from datetime import datetime
 
-from geoalchemy import GeometryColumn, GeometryDDL, Point, Points
+from geoalchemy2 import Geometry
 
 from motracker.database import (
     Column,
@@ -56,15 +56,13 @@ class Pointz(SurrogatePK, Model):
     timez = Column(db.DateTime, nullable=False, default=datetime.utcnow)
     track_id = reference_col("tracks", nullable=True)
     track = relationship("Trackz", backref="points")
-    geom = GeometryColumn(Point(2))
+    geom = Column(Geometry('POINT'), unique=False, nullable=True)
     altitude = Column(db.Float, unique=False, nullable=True)
     speed = Column(db.Float, unique=False, nullable=True)
     bearing = Column(db.Float, unique=False, nullable=True)
     accuracy = Column(db.Integer, unique=False, nullable=True)
     provider = Column(db.String(100), unique=False, nullable=True)
     comment = Column(db.String(255), unique=False, nullable=True)
-
-    GeometryDDL(Points.__table__)
 
     def __init__(self, timez, track_id, track, geom, altitude, speed, bearing,
                  accuracy, provider, comment):
