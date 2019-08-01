@@ -27,7 +27,26 @@
             </div>
         </div>
         <div class="row">
-            {{ allfilez }}
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th scope="col">#</th>
+                        <th scope="col">When uploaded?</th>
+                        <th scope="col">Description</th>
+                        <th scope="col">Privacy</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for filename in allfilez %}
+                    <tr>
+                        <th scope="row">{{ filename.id }}.gpx</th>
+                        <td>{{ filename.when_uploaded }}</td>
+                        <td>{{ filename.description }}</td>
+                        <td>{{ filename.is_private }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 {% endblock %}

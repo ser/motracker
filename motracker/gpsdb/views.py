@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
 
-import datetime
 import pynmea2
 import strgen
+from datetime import datetime
 from flask import (
     Blueprint,
     current_app,
@@ -34,7 +34,7 @@ def parse_rmc(gprmc):
     lon = valuez.longitude
     speed = valuez.spd_over_grnd
     bearing = valuez.true_course
-    timez = datetime.datetime.combine(valuez.datestamp, valuez.timestamp)
+    timez = datetime.combine(valuez.datestamp, valuez.timestamp)
 
     return(
         timez,

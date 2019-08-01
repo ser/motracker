@@ -38,16 +38,23 @@ class Filez(SurrogatePK, Model):
     __tablename__ = "files"
     user_id = reference_col("users", nullable=True)
     user = relationship("User", backref="files")
+    when_uploaded = Column(db.DateTime(), nullable=False,
+                           default=datetime.utcnow)
     is_private = db.Column(db.Boolean, nullable=True)
     description = db.Column(db.String, nullable=False)
 
     def __init__(self, is_private, description, **kwargs):
         """Create instance."""
-        db.Model.__init__(self, is_private=is_private, description=description, **kwargs)
+        db.Model.__init__(self,
+                          is_private=is_private,
+                          description=description,
+                          **kwargs)
 
     def __repr__(self):
         """Represent instance as a unique string."""
-        return '<id: {}>'.format(self.id)
+        return '<id: {}, desc: {}, when: {}>'.format(self.id,
+                                                     self.description,
+                                                     self.when_uploaded)
 
 
 class Trackz(SurrogatePK, Model):
@@ -71,7 +78,7 @@ class Pointz(SurrogatePK, Model):
     """Table with points."""
 
     __tablename__ = "points"
-    timez = Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    timez = Column(db.DateTime(), nullable=False)
     track_id = reference_col("tracks", nullable=True)
     track = relationship("Trackz", backref="points")
     geom = Column(Geometry('POINT'), unique=False, nullable=True)
