@@ -15,7 +15,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
-from motracker.extensions import db
+from motracker.extensions import db, filez
 from motracker.utils import flash_errors
 
 from .forms import AddFileForm, ApiForm
@@ -83,21 +83,26 @@ def gpsapi():
 
 @blueprint.route("/files", methods=["GET", "POST"])
 @login_required
-def filez():
+def filezsave():
     """Upload previously recorded tracks."""
     form = AddFileForm()
     if request.method == 'POST':
         if form.validate_on_submit():
             dbfile = Filez.create(
                 user=current_user,
-                is_public=form.is_public,
-                description=form.description
+                is_private=form.is_private.data,
+                description=form.description.data
             )
-            current_app.logger.debug(dbfile)
+            # all tracks are saved with filename which is equal to database ID
+            filez.save(request.files['upload_file'], name=str(dbfile.id) + ".gpx")
+            current_app.logger.debug("Saved File: " + str(dbfile.id) + ".gpx")
         else:
             flash_errors(form)
+    # Presetn all files belonging to user
+    query = Filez.query.filter_by(user=current_user).all()
     return render_template(
         "gpsdb/filez.html",
+        allfilez=query,
         form=form)
 
 

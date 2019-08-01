@@ -38,12 +38,12 @@ class Filez(SurrogatePK, Model):
     __tablename__ = "files"
     user_id = reference_col("users", nullable=True)
     user = relationship("User", backref="files")
-    is_public = db.Column(db.Boolean, nullable=False)
+    is_private = db.Column(db.Boolean, nullable=True)
     description = db.Column(db.String, nullable=False)
 
-    def __init__(self, is_public, description, **kwargs):
+    def __init__(self, is_private, description, **kwargs):
         """Create instance."""
-        db.Model.__init__(self, is_public=is_public, description=description, **kwargs)
+        db.Model.__init__(self, is_private=is_private, description=description, **kwargs)
 
     def __repr__(self):
         """Represent instance as a unique string."""

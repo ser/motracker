@@ -36,12 +36,13 @@ class AddFileForm(FlaskForm):
         'GPX File Description',
         validators=[DataRequired()]
     )
-    is_public = BooleanField(
-        "Do you want to show this file publicaly?"
+    is_private = BooleanField(
+        "Do you want to keep this file privately?"
     )
     upload_file = FileField(
         'Chose File',
-        validators=[FileRequired(), FileAllowed(filez, 'GPX tracks onlY!')]
+        # validators=[FileRequired(), FileAllowed(filez, 'GPX tracks onlY!')]
+        validators=[FileRequired()]
     )
 
     def __init__(self, *args, **kwargs):
