@@ -96,8 +96,7 @@ def filezsave():
                 # At the moment we support UTF-8 files and compatible only
                 parsedfile = file.stream.read().decode('utf-8')
                 ourgpx = gpxpy.parse(parsedfile)
-                # file is parsing, so we are extracting basic interesting data
-                # about it
+                # file is parsing, so we are extracting basic interesting data about it
                 length_2d = ourgpx.length_2d()
                 length_3d = ourgpx.length_3d()
                 moving_time, stopped_time, moving_distance, stopped_distance, max_speed = ourgpx.get_moving_data()
@@ -117,9 +116,11 @@ def filezsave():
                 description=form.description.data
             )
             # all tracks are saved with filename which is equal to database ID
-            filez.save(file, name=str(dbfile.id) + ".gpx")
+            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(dbfile.id) + ".gpx"
+            with open(fname, "w", encoding="utf-8") as f:
+                f.write(parsedfile)
             fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(dbfile.id) + ".txt"
-            with open(fname, "w") as f:
+            with open(fname, "w", encoding="utf-8") as f:
                 try:
                     f.write("Number of points: {}\n".format(points_no))
                 except:
@@ -178,7 +179,7 @@ def filezsave():
     for x in query:
         # A brief description presentation
         fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.id) + ".txt"
-        with open(fname) as f:
+        with open(fname, 'r', encoding="utf-8") as f:
             read_file = f.readlines()
             gpxq[x.id] = read_file
     return render_template(
@@ -190,8 +191,24 @@ def filezsave():
 @blueprint.route("/gpxtrace/<int:gpx_id>")
 def gpxtrace(gpx_id):
     """Traces and shows GPX on a map."""
+    fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(gpx_id) + ".gpx"
+    gpx_file = open(fname, 'r', encoding="utf-8")
+    gpx = gpxpy.parse(gpx_file)
+#    gpx = gpxpy.parse(gpx_file)
+    gpxtxt = ""
+    for track in gpx.tracks:
+        for segment in track.segments:
+            for point in segment.points:
+                gpxtxt += 'Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation)
+    for waypoint in gpx.waypoints:
+        gpxtxt += 'waypoint {0} -> ({1},{2})'.format(waypoint.name, waypoint.latitude, waypoint.longitude)
+    for route in gpx.routes:
+        gpxtxt += 'Route:'
+        for point in route.points:
+            gpxtxt += 'Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation)
     return render_template(
-        "gpsdb/showtrack.html"
+        "gpsdb/showtrack.html",
+        gpxtxt=gpxtxt
     )
 
 @blueprint.route("/data/opengts")
