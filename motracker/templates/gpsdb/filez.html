@@ -27,7 +27,7 @@
             </div>
         </div>
         <div class="row">
-            <table class="table table-striped">
+            <table class="table table-striped table-hover">
                 <thead class="thead-dark">
                     <tr>
                         <th scope="col">#</th>
@@ -40,10 +40,10 @@
                 <tbody>
                     {% for filename in allfilez|sort(attribute='id', reverse = True) %}
                     <tr>
-                        <th scope="row">{{ filename.id }}.gpx</th>
+                        <th scope="row">{{ filename.id }}.gpx <a href={{ url_for('gpsdb.gpxtrace', gpx_id=filename.id) }}><span class="badge badge-secondary">show</span></a></th>
                         <td>{{ filename.when_uploaded }}</td>
                         <td>{{ filename.description }}</td>
-                        <td>{% for x in gpxq[filename.id] %} {{ x }}<br/> {% endfor %}</td>
+                        <td><small>{% for x in gpxq[filename.id] %} {{ x }}<br/> {% endfor %}</small></td>
                         <td>{{ filename.is_private }}</td>
                     </tr>
                     {% endfor %}

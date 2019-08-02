@@ -64,6 +64,7 @@ class Trackz(SurrogatePK, Model):
     name = Column(db.String(255), unique=False, nullable=False)
     user_id = reference_col("users", nullable=True)
     user = relationship("User", backref="tracks")
+    gpx_id = reference_col("files", nullable=True)
 
     def __init__(self, name, **kwargs):
         """Create instance."""

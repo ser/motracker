@@ -176,6 +176,7 @@ def filezsave():
     query = Filez.query.filter_by(user=current_user).all()
     gpxq = {}
     for x in query:
+        # A brief description presentation
         fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.id) + ".txt"
         with open(fname) as f:
             read_file = f.readlines()
@@ -186,6 +187,12 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
+@blueprint.route("/gpxtrace/<int:gpx_id>")
+def gpxtrace(gpx_id):
+    """Traces and shows GPX on a map."""
+    return render_template(
+        "gpsdb/showtrack.html"
+    )
 
 @blueprint.route("/data/opengts")
 def opengts():
