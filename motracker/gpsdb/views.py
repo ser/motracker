@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
 
+from datetime import datetime
+
+import gpxpy
 import pynmea2
 import strgen
-from datetime import datetime
 from flask import (
     Blueprint,
     current_app,
@@ -88,21 +90,100 @@ def filezsave():
     form = AddFileForm()
     if request.method == 'POST':
         if form.validate_on_submit():
+            # Verify if the GPX is valid
+            file = request.files['upload_file']
+            try:
+                # At the moment we support UTF-8 files and compatible only
+                parsedfile = file.stream.read().decode('utf-8')
+                ourgpx = gpxpy.parse(parsedfile)
+                # file is parsing, so we are extracting basic interesting data
+                # about it
+                length_2d = ourgpx.length_2d()
+                length_3d = ourgpx.length_3d()
+                moving_time, stopped_time, moving_distance, stopped_distance, max_speed = ourgpx.get_moving_data()
+                uphill, downhill = ourgpx.get_uphill_downhill()
+                start_time, end_time = ourgpx.get_time_bounds()
+                points_no = len(list(ourgpx.walk(only_points=True)))
+            except:
+                flash("Uploaded file is not a valid GPX. Try another one.", "warning")
+                query = Filez.query.filter_by(user=current_user).all()
+                return render_template(
+                    "gpsdb/filez.html",
+                    allfilez=query,
+                    form=form)
             dbfile = Filez.create(
                 user=current_user,
                 is_private=form.is_private.data,
                 description=form.description.data
             )
             # all tracks are saved with filename which is equal to database ID
-            filez.save(request.files['upload_file'], name=str(dbfile.id) + ".gpx")
+            filez.save(file, name=str(dbfile.id) + ".gpx")
+            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(dbfile.id) + ".txt"
+            with open(fname, "w") as f:
+                try:
+                    f.write("Number of points: {}\n".format(points_no))
+                except:
+                    pass
+                try:
+                    f.write("Start time: {}\n".format(start_time))
+                except:
+                    pass
+                try:
+                    f.write("End time: {}\n".format(end_time))
+                except:
+                    pass
+                try:
+                    f.write("2D length: {}\n".format(length_2d))
+                except:
+                    pass
+                try:
+                    f.write("3D length: {}\n".format(length_3d))
+                except:
+                    pass
+                try:
+                    f.write("Moving time: {}\n".format(moving_time))
+                except:
+                    pass
+                try:
+                    f.write("Stopped time: {}\n".format(stopped_time))
+                except:
+                    pass
+                try:
+                    f.write("Moving distance: {}\n".format(moving_distance))
+                except:
+                    pass
+                try:
+                    f.write("Stopped distance: {}\n".format(stopped_distance))
+                except:
+                    pass
+                try:
+                    f.write("Max speed: {}\n".format(max_speed))
+                except:
+                    pass
+                try:
+                    f.write("Uphill: {}\n".format(uphill))
+                except:
+                    pass
+                try:
+                    f.write("Downhill: {}\n".format(downhill))
+                except:
+                    pass
+            flash("Successfully uploaded your GPX file.", "info")
             current_app.logger.debug("Saved File: " + str(dbfile.id) + ".gpx")
         else:
             flash_errors(form)
     # Presetn all files belonging to user
     query = Filez.query.filter_by(user=current_user).all()
+    gpxq = {}
+    for x in query:
+        fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.id) + ".txt"
+        with open(fname) as f:
+            read_file = f.readlines()
+            gpxq[x.id] = read_file
     return render_template(
         "gpsdb/filez.html",
         allfilez=query,
+        gpxq=gpxq,
         form=form)
 
 

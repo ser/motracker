@@ -6,6 +6,8 @@ Most configuration is set via environment variables.
 For local development, use a .env file to set
 environment variables.
 """
+import os
+
 from environs import Env
 
 env = Env()
@@ -21,3 +23,5 @@ DEBUG_TB_INTERCEPT_REDIRECTS = False
 CACHE_TYPE = "simple"  # Can be "memcached", "redis", etc.
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 WEBPACK_MANIFEST_PATH = "webpack/manifest.json"
+UPLOADS_DEFAULT_DEST = os.path.abspath(os.curdir) + env.str("UPLOADS_DEFAULT_DEST")
+UPLOADS_DEFAULT_URL = env.str("UPLOADS_DEFAULT_URL")

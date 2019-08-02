@@ -33,15 +33,17 @@
                         <th scope="col">#</th>
                         <th scope="col">When uploaded?</th>
                         <th scope="col">Description</th>
+                        <th scope="col">Content</th>
                         <th scope="col">Privacy</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for filename in allfilez %}
+                    {% for filename in allfilez|sort(attribute='id', reverse = True) %}
                     <tr>
                         <th scope="row">{{ filename.id }}.gpx</th>
                         <td>{{ filename.when_uploaded }}</td>
                         <td>{{ filename.description }}</td>
+                        <td>{% for x in gpxq[filename.id] %} {{ x }}<br/> {% endfor %}</td>
                         <td>{{ filename.is_private }}</td>
                     </tr>
                     {% endfor %}
