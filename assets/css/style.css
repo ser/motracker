@@ -84,3 +84,16 @@ footer .footer-nav {
   margin-right: 25px;
   list-style: none;
 }
+
+/* =============================================================================
+ * LEAFLET
+   ========================================================================== */
+#gnssmap {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    margin: 0;
+    padding :0;
+    border: 1px solid black;
+    border-radius: 8px;
+}

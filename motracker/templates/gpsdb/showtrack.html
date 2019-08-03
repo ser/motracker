@@ -1,10 +1,11 @@
 
 {% extends "layout.html" %}
 {% block content %}
-    <div class="container">
+    <div class="container-fluid">
         <div class="row">
-            {{ gpxtxt }}
+            <div class="col-sm">
+                <div id="gnssmap"></div>
+            </div>
         </div>
     </div>
 {% endblock %}
-
