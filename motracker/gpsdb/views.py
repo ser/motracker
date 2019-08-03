@@ -197,8 +197,10 @@ def gpxtrace(gpx_id):
     # check if we have the GPS already rendered, if not, render it
     track = Trackz.query.filter_by(gpx_id=gpx_id).first()
     if not track:
-        track.id = gpx2geo(gpx_id)
-    return redirect(url_for('gpsdb.showtrack', track_id=track.id))
+        track_id = gpx2geo(gpx_id)
+    else:
+        track_id = track.id
+    return redirect(url_for('gpsdb.showtrack', track_id=track_id))
 
 @blueprint.route("/show/<int:track_id>")
 def showtrack(track_id):
