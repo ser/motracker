@@ -42,6 +42,9 @@ environs>=4.0.0
 # API creation
 StringGenerator
 
+# Offline jobs
+celery>=4.3.0
+
 # Various GNSS libraries
 pynmea2>=1.15.0
 gpxpy>=1.3.5

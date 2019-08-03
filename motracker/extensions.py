@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Extensions module. Each extension is initialized in the app factory located in app.py."""
+from flask import current_app
 from flask_bcrypt import Bcrypt
 from flask_caching import Cache
 from flask_debugtoolbar import DebugToolbarExtension
@@ -10,6 +11,8 @@ from flask_uploads import UploadSet
 from flask_webpack import Webpack
 from flask_wtf.csrf import CSRFProtect
 
+# from celery import Celery
+
 bcrypt = Bcrypt()
 cache = Cache()
 csrf_protect = CSRFProtect()
@@ -19,3 +22,6 @@ filez = UploadSet(name='filez', extensions=('gpx', 'GPX'), default_dest=lambda x
 login_manager = LoginManager()
 migrate = Migrate()
 webpack = Webpack()
+
+# with current_app.app_context():
+#    celery = Celery(current_app.name, broker=current_app.config['CELERY_BROKER_URL'])

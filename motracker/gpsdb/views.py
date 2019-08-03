@@ -17,6 +17,7 @@ from flask import (
 )
 from flask_login import current_user, login_required
 
+# from motracker.extensions import celery, db, filez
 from motracker.extensions import db, filez
 from motracker.utils import flash_errors
 
@@ -57,7 +58,7 @@ blueprint = Blueprint("gpsdb", __name__, url_prefix="/gnss", static_folder="../s
 def gpsapi():
     """(re)Generate and/or present API key."""
     form = ApiForm(request.form)
-    hasapi = ApiKey.query.filter_by(user=current_user).first()
+    hasapi = ApiKey.query.filter_by(user_id=current_user.get_id()).first()
     # Handle regeneration of API key
     if request.method == "POST":
         if form.validate_on_submit():
@@ -74,7 +75,7 @@ def gpsapi():
     else:
         apikey = strgen.StringGenerator("[\w\d]{10}").render()
         ApiKey.create(
-            user=current_user,
+            user_id=current_user.get_id(),
             apikey=apikey
         )
     return render_template(
@@ -103,15 +104,16 @@ def filezsave():
                 uphill, downhill = ourgpx.get_uphill_downhill()
                 start_time, end_time = ourgpx.get_time_bounds()
                 points_no = len(list(ourgpx.walk(only_points=True)))
-            except:
+            except Exception as e:
+                current_app.logger.info(e)
                 flash("Uploaded file is not a valid GPX. Try another one.", "warning")
-                query = Filez.query.filter_by(user=current_user).all()
+                query = Filez.query.filter_by(user_id=current_user.get_id()).all()
                 return render_template(
                     "gpsdb/filez.html",
                     allfilez=query,
                     form=form)
             dbfile = Filez.create(
-                user=current_user,
+                user_id=current_user.get_id(),
                 is_private=form.is_private.data,
                 description=form.description.data
             )
@@ -123,58 +125,58 @@ def filezsave():
             with open(fname, "w", encoding="utf-8") as f:
                 try:
                     f.write("Number of points: {}\n".format(points_no))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Start time: {}\n".format(start_time))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("End time: {}\n".format(end_time))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("2D length: {}\n".format(length_2d))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("3D length: {}\n".format(length_3d))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Moving time: {}\n".format(moving_time))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Stopped time: {}\n".format(stopped_time))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Moving distance: {}\n".format(moving_distance))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Stopped distance: {}\n".format(stopped_distance))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Max speed: {}\n".format(max_speed))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Uphill: {}\n".format(uphill))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
                 try:
                     f.write("Downhill: {}\n".format(downhill))
-                except:
-                    pass
+                except Exception as e:
+                    current_app.logger.debug(e)
             flash("Successfully uploaded your GPX file.", "info")
             current_app.logger.debug("Saved File: " + str(dbfile.id) + ".gpx")
         else:
             flash_errors(form)
-    # Presetn all files belonging to user
-    query = Filez.query.filter_by(user=current_user).all()
+    # Present all files belonging to user
+    query = Filez.query.filter_by(user_id=current_user.get_id()).all()
     gpxq = {}
     for x in query:
         # A brief description presentation
@@ -190,25 +192,11 @@ def filezsave():
 
 @blueprint.route("/gpxtrace/<int:gpx_id>")
 def gpxtrace(gpx_id):
-    """Traces and shows GPX on a map."""
-    fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(gpx_id) + ".gpx"
-    gpx_file = open(fname, 'r', encoding="utf-8")
-    gpx = gpxpy.parse(gpx_file)
-#    gpx = gpxpy.parse(gpx_file)
-    gpxtxt = ""
-    for track in gpx.tracks:
-        for segment in track.segments:
-            for point in segment.points:
-                gpxtxt += 'Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation)
-    for waypoint in gpx.waypoints:
-        gpxtxt += 'waypoint {0} -> ({1},{2})'.format(waypoint.name, waypoint.latitude, waypoint.longitude)
-    for route in gpx.routes:
-        gpxtxt += 'Route:'
-        for point in route.points:
-            gpxtxt += 'Point at ({0},{1}) -> {2}'.format(point.latitude, point.longitude, point.elevation)
+    """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
+    from motracker.utils import gpx2geo
+    gpx2geo(gpx_id)
     return render_template(
         "gpsdb/showtrack.html",
-        gpxtxt=gpxtxt
     )
 
 @blueprint.route("/data/opengts")
