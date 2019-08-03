@@ -9,6 +9,7 @@ require('@fortawesome/fontawesome-free');
 require('jquery');
 require('popper.js');
 require('bootstrap');
+require('leaflet');
 
 // Your own code
 require('./plugins.js');

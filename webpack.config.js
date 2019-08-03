@@ -23,6 +23,7 @@ module.exports = {
     main_css: [
       path.join(__dirname, 'node_modules', 'font-awesome', 'css', 'font-awesome.css'),
       path.join(__dirname, 'node_modules', 'bootstrap', 'dist', 'css', 'bootstrap.css'),
+      path.join(__dirname, 'node_modules', 'leaflet', 'dist', 'leaflet.css'),
       path.join(__dirname, 'assets', 'css', 'style.css'),
     ],
   },
