@@ -4,6 +4,7 @@ import logging
 import sys
 
 from flask import Flask, render_template
+from flask_kvsession import KVSessionExtension
 from flask_uploads import configure_uploads, patch_request_class
 
 from motracker import commands, gpsdb, public, user
@@ -16,6 +17,7 @@ from motracker.extensions import (
     filez,
     login_manager,
     migrate,
+    store,
     webpack,
 )
 
@@ -52,6 +54,7 @@ def register_extensions(app):
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
     webpack.init_app(app)
+    KVSessionExtension(store, app)
     return None
 
 

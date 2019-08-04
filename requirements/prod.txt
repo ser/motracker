@@ -17,6 +17,7 @@ Flask-Migrate>=2.2.1
 Flask-WTF>=0.14.2
 WTForms>=2.2.1
 Flask-Uploads>=0.2.1
+Flask-KVSession>=0.6.2
 
 # Deployment
 gevent>=1.4.0
@@ -43,6 +44,7 @@ environs>=4.0.0
 StringGenerator
 
 # Offline jobs
+redis>=3.3.5
 celery>=4.3.0
 
 # Various GNSS libraries
