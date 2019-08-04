@@ -57,7 +57,7 @@ def gpx2geo(gpx_id):
                 Pointz.create(
                     track_id=newtrack.id,
                     provider=point.source,
-                    geom='SRID=4326;POINT({} {})'.format(point.latitude, point.longitude),
+                    geom='SRID=4326;POINT({} {})'.format(point.longitude, point.latitude),
                     altitude=point.elevation,
                     timez=point.time,
                     speed=speed,

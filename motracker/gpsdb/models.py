@@ -21,6 +21,7 @@ class ApiKey(SurrogatePK, Model):
     __tablename__ = "apikey"
     apikey = Column(db.String(10), unique=True, nullable=False)
     user_id = reference_col("users", nullable=False)
+    user = relationship('User', cascade="all,delete", backref='apiusers')
 
     def __init__(self, apikey, **kwargs):
         """Create instance."""
@@ -36,6 +37,7 @@ class Filez(SurrogatePK, Model):
 
     __tablename__ = "files"
     user_id = reference_col("users", nullable=True)
+    user = relationship('User', cascade="all,delete", backref='fileusers')
     when_uploaded = Column(db.DateTime(), nullable=False,
                            default=datetime.utcnow)
     is_private = db.Column(db.Boolean, nullable=True)
@@ -61,6 +63,7 @@ class Trackz(SurrogatePK, Model):
     __tablename__ = "tracks"
     name = Column(db.String(255), unique=False, nullable=False)
     user_id = reference_col("users", nullable=True)
+    user = relationship('User', cascade="all,delete", backref='trackusers')
     start = Column(db.DateTime(), nullable=True)
     stop = Column(db.DateTime(), nullable=True)
     description = db.Column(db.String, nullable=True)
@@ -86,6 +89,7 @@ class Pointz(SurrogatePK, Model):
     __tablename__ = "points"
     timez = Column(db.DateTime(), nullable=False)
     track_id = reference_col("tracks", nullable=True)
+    track = relationship('Trackz', cascade="all,delete", backref='tracks')
     geom = Column(Geometry('POINT', dimension=2, srid=4326, management=True), unique=False, nullable=True)
     altitude = Column(db.Float, unique=False, nullable=True)
     speed = Column(db.Float, unique=False, nullable=True)

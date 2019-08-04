@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
-
 from datetime import datetime
 
 import gpxpy
@@ -18,11 +17,12 @@ from flask import (
 from flask_login import current_user, login_required
 
 # from motracker.extensions import celery, db, filez
-from motracker.extensions import db, filez
+from motracker.extensions import db
 from motracker.utils import flash_errors
+from sqlalchemy import text
 
 from .forms import AddFileForm, ApiForm
-from .models import ApiKey, Filez, Pointz, Trackz
+from .models import Filez, Trackz, Pointz, ApiKey
 
 # SUPPORT FUNCTIONS
 
@@ -177,6 +177,7 @@ def filezsave():
             flash_errors(form)
     # Present all files belonging to user
     query = Filez.query.filter_by(user_id=current_user.get_id()).all()
+    current_app.logger.debug(query)
     gpxq = {}
     for x in query:
         # A brief description presentation
@@ -190,6 +191,7 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
+
 @blueprint.route("/gpxtrace/<int:gpx_id>")
 def gpxtrace(gpx_id):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
@@ -202,12 +204,42 @@ def gpxtrace(gpx_id):
         track_id = track.id
     return redirect(url_for('gpsdb.showtrack', track_id=track_id))
 
+
 @blueprint.route("/show/<int:track_id>")
 def showtrack(track_id):
     """Shows track on the map."""
     return render_template(
         "gpsdb/showtrack.html",
+        track_id=track_id
     )
+
+@blueprint.route("/json/<int:track_id>")
+def geojson(track_id):
+    """Sends a GeoJON built from a track."""
+    try:
+        # TODO: check if track exists and is not private
+        #
+        # example data for debugging purposes only:
+        # data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":\
+        #    "LineString","coordinates":[[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}}]}'
+        #
+        # here we ask for a specific track in plain SQL as it is simpler
+        # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
+        sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
+                FROM points WHERE points.track_id = {};'.format(track_id))
+        result = db.session.execute(sql)
+        trackjson = result.fetchone()  # TODO: maybe .fetchall() some day?
+        current_app.logger.debug(trackjson)
+        data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":' + trackjson[0] + '}]}'
+        response = current_app.response_class(
+            response=data,
+            status=200,
+            mimetype='application/json'
+        )
+        return response
+    except:
+        return ""
+
 
 @blueprint.route("/data/opengts")
 def opengts():
