@@ -265,10 +265,8 @@ def geojson(track_id, username):
     )
     # check if track_id was provided and is an int, else flask sends 404
     if isinstance(track_id, int) and isinstance(username, str):
-        # Get user ID for user
-        user = User.query.filter_by(username=username).first()
-        if not user:
-            return render_template('404.html'), 404
+        # Get user ID for user or 404
+        user = User.query.filter_by(username=username).first_or_404()
         # check if track exist
         r1 = Trackz.query.filter_by(id=track_id).first()
         if r1:
