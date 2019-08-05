@@ -34,18 +34,21 @@ def parse_rmc(gprmc):
     parser library: https://github.com/Knio/pynmea2
     """
     valuez = pynmea2.parse(gprmc)
+
     lat = valuez.latitude
     lon = valuez.longitude
     speed = valuez.spd_over_grnd
     bearing = valuez.true_course
     timez = datetime.combine(valuez.datestamp, valuez.timestamp)
+    trackdate = valuez.datestamp
 
-    return(
-        timez,
-        lat,
-        lon,
-        speed,
-        bearing
+    return dict(
+        timez=timez,
+        lat=lat,
+        lon=lon,
+        speed=speed,
+        bearing=bearing,
+        trackdate=trackdate
     )
 
 
@@ -284,7 +287,7 @@ def geojson(track_id, username):
                                         gpx_id=None).order_by(Trackz.id.desc()).first()
             if q1:
                 # q2 = Pointz.query.filter_by(track_id=q1.id).order_by(Pointz.timez.desc()).first()
-                q2 = text('SELECT ST_AsGeoJSON(ST_Transform(points.geom,4326) ORDER BY points.timez DESC),6) \
+                q2 = text('SELECT ST_AsGeoJSON(ST_Transform(points.geom,4326) ORDER BY points.timez DESC,6) \
                        FROM points WHERE points.track_id = {} LIMIT 1;'.format(q1.id))
                 result = db.session.execute(q2)
                 trackjson = result.fetchone()
@@ -329,20 +332,72 @@ def opengts():
     http://www.opengts.org/OpenGTS_Config.pdf
     http://www.geotelematic.com/docs/StatusCodes.pdf
     """
-    id = request.args.get('id')
+    alt = request.args.get('alt')
+    apicode = request.args.get('id')
     code = request.args.get('code')
-    gprmc = request.args.get('gmprc')
+    gprmc = request.args.get('gprmc')
+    device = request.args.get('acct')
+    current_app.logger.debug('alt = {}'.format(alt))
+    current_app.logger.debug('id = {}'.format(apicode))
+    current_app.logger.debug('code = {}'.format(code))
+    current_app.logger.debug('device = {}'.format(device))
+    current_app.logger.debug('gprmc = {}'.format(gprmc))
 
     # parsing id to match GNSS Api
-    haskey = ApiKey.query.filter_by(apikey=id).first()
+    haskey = ApiKey.query.filter_by(apikey=apicode).first()
     if haskey:
         user_id = haskey.user_id
-        current_app.logger.info("Found valid API ket belonging to %s." %
-                                haskey.user)
+        current_app.logger.info("Found valid API code belonging to User ID = {}.".format(user_id))
     else:
-        current_app.logger.info("No user has such an API key. Ignoring request.")
-        return f'Hello?'
+        current_app.logger.info("No user has such an API key = {}. Ignoring request then.".format(id))
+        return 'Hello?'
 
-    # parsing NMEA-0183 $GPRMC record
+    # code 0xF020 means OpenGTS location reporting
     if code == "0xF020":
-        pass
+        # parsing NMEA-0183 $GPRMC record
+        gpsdata = parse_rmc(gprmc)
+        current_app.logger.debug('parsed gprmc: {}'.format(gpsdata))
+        # checking tracks database for the data and device
+        trackdb = Trackz.query.filter_by(trackdate=gpsdata['trackdate'],
+                                         device=device).first()
+        if trackdb:
+            current_app.logger.debug('trackdb: {}'.format(trackdb))
+        else:
+            # we need to create a track
+            trackdb = Trackz.create(
+                name="OpenGTS",
+                user_id=user_id,
+                start=datetime.utcnow(),
+                description="LiveTracking",
+                device=device,
+                trackdate=gpsdata['trackdate']
+            )
+            current_app.logger.debug('trackdb: {}'.format(trackdb))
+        # we have track id, now we must check if the location was not already
+        # submitted, as it looks like opengts often tries to resubmit the same
+        # points over and over again.
+        points = Pointz.query.filter_by(
+            track_id=trackdb.id,
+            geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'], gpsdata['lat'])
+        ).first()
+        if not points:
+            # we have track id, now we can finally submit location
+            points = Pointz.create(
+                track_id=trackdb.id,
+                geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'], gpsdata['lat']),
+                altitude=alt,
+                timez=gpsdata['timez'],
+                speed=gpsdata['speed'],
+                bearing=gpsdata['bearing'],
+                comment="OpenGTS",
+                sat=None,
+                vdop=None,
+                pdop=None,
+                hdop=None,
+                provider="gps"
+            )
+            current_app.logger.debug(points)
+        else:
+            current_app.logger.debug('We already have that point recorded. Thank you.')
+        #
+    return 'OK'
