@@ -22,7 +22,8 @@ def userpage(username):
         return render_template(
             "users/showoff.html",
             firstname=q1.first_name,
-            lastname=q1.last_name
+            lastname=q1.last_name,
+            username=username
         )
     else:
         return render_template('404.html'), 404

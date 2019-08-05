@@ -19,7 +19,7 @@ from flask_login import current_user, login_required
 # from motracker.extensions import celery, db, filez
 from motracker.extensions import db
 from motracker.user.models import User
-from motracker.utils import flash_errors
+from motracker.utils import gpx2geo, flash_errors
 from sqlalchemy import text
 
 from .forms import AddFileForm, ApiForm
@@ -209,25 +209,26 @@ def realtime(username):
             )
 
 
-@blueprint.route("/gpx/<int:gpx_id>")
-def gpxtrace(gpx_id):
+@blueprint.route("/gpx/<string:username>/<int:gpx_id>")
+def gpxtrace(username, gpx_id):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
     # TODO: use celery to parse the track
-    from motracker.utils import gpx2geo
     # check if we have the GPS already rendered, if not, render it
     track = Trackz.query.filter_by(gpx_id=gpx_id).first()
     if not track:
         track_id = gpx2geo(gpx_id)
     else:
         track_id = track.id
-    return redirect(url_for('gpsdb.showtrack', track_id=track_id))
+    return redirect(url_for('gpsdb.showtrack',
+                            track_id=track_id,
+                            username=username))
 
 
-@blueprint.route("/show/<int:track_id>")
-def showtrack(track_id):
+@blueprint.route("/show/<string:username>/<int:track_id>")
+def showtrack(track_id, username):
     """Shows track on the map."""
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    if isinstance(track_id, int) and isinstance(username, str):
         # check if track exist
         r1 = Trackz.query.filter_by(id=track_id).first()
         if r1:
@@ -246,23 +247,28 @@ def showtrack(track_id):
             "gpsdb/showtrack.html",
             track_id=track_id,
             trackname=trackname,
-            trackdesc=trackdesc
+            trackdesc=trackdesc,
+            username=username
         )
 
 
-@blueprint.route("/json/<int:track_id>")
-def geojson(track_id):
+@blueprint.route("/json/<string:username>/<int:track_id>")
+def geojson(track_id, username):
     """Sends a GeoJON built from a track."""
     # fake track as default response
     faketrack = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":\
             "LineString","coordinates":[[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}}]}'
-    response = current_app.response_class(
+    fakeresponse = current_app.response_class(
         response=faketrack,
         status=200,
         mimetype='application/json'
     )
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    if isinstance(track_id, int) and isinstance(username, str):
+        # Get user ID for user
+        user = User.query.filter_by(username=username).first()
+        if not user:
+            return render_template('404.html'), 404
         # check if track exist
         r1 = Trackz.query.filter_by(id=track_id).first()
         if r1:
@@ -271,11 +277,37 @@ def geojson(track_id):
                 r2 = Filez.query.filter_by(id=r1.gpx_id).first()
                 if r2:
                     if r2.is_private:
-                        return response
+                        return fakeresponse
+        # track no 0 means realtime
+        elif track_id == 0:
+            # simplifying things, we are showing last recorded position
+            # of last available track which is not rendered from GPX
+            q1 = Trackz.query.filter_by(user_id=user.id,
+                                        gpx_id=None).order_by(Trackz.id.desc()).first()
+            if q1:
+                # q2 = Pointz.query.filter_by(track_id=q1.id).order_by(Pointz.timez.desc()).first()
+                q2 = text('SELECT ST_AsGeoJSON(ST_Transform(points.geom,4326) ORDER BY points.timez DESC),6) \
+                       FROM points WHERE points.track_id = {} LIMIT 1;'.format(q1.id))
+                result = db.session.execute(q2)
+                trackjson = result.fetchone()
+                if trackjson:
+                    current_app.logger.debug(trackjson)
+                    data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":' \
+                        + trackjson[0] + '}]}'
+                    response = current_app.response_class(
+                        response=data,
+                        status=200,
+                        mimetype='application/json'
+                    )
+                    return response
+                else:
+                    return fakeresponse
+            else:
+                return fakeresponse
         # if track does not exist in our database, we are sending a fake one
         # instead of
         else:
-            return response
+            return fakeresponse
         # here we ask for a specific track in plain SQL as it is simpler
         # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
         sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \

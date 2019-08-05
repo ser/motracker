@@ -41,7 +41,7 @@
                 <tbody>
                     {% for filename in allfilez|sort(attribute='id', reverse = True) %}
                     <tr>
-                        <th scope="row">{{ filename.id }}.gpx <a href={{ url_for('gpsdb.gpxtrace', gpx_id=filename.id) }}><span class="badge badge-secondary">show</span></a></th>
+                        <th scope="row">{{ filename.id }}.gpx <a href={{ url_for('gpsdb.gpxtrace', username=current_user.username, gpx_id=filename.id) }}><span class="badge badge-secondary">show</span></a></th>
                         <td>{{ filename.when_uploaded }}</td>
                         <td>{{ filename.description }}</td>
                         <td><small>{% for x in gpxq[filename.id] %} {{ x }}<br/> {% endfor %}</small></td>

@@ -3,7 +3,7 @@ var map;
 
 function initmap() {
   var geotrack = $.ajax({
-    url: `/gnss/json/${trackid}`,
+    url: `/gnss/json/${username}/${trackid}`,
     dataType: 'json',
     success: console.log('Track data successfully loaded.'),
     error: function (xhr) {
