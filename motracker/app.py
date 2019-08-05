@@ -6,6 +6,7 @@ import sys
 from flask import Flask, render_template
 from flask_kvsession import KVSessionExtension
 from flask_uploads import configure_uploads, patch_request_class
+from werkzeug.contrib.fixers import ProxyFix
 
 from motracker import commands, gpsdb, public, user
 from motracker.extensions import (
@@ -42,6 +43,7 @@ def create_app(config_object="motracker.settings"):
 def register_configuration(app):
     configure_uploads(app, filez)
     patch_request_class(app, size=25000000)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
 
 
 def register_extensions(app):

@@ -288,7 +288,7 @@ def geojson(track_id, username):
             if q1:
                 # q2 = Pointz.query.filter_by(track_id=q1.id).order_by(Pointz.timez.desc()).first()
                 q2 = text('SELECT ST_AsGeoJSON(ST_Transform(points.geom,4326) ORDER BY points.timez DESC,6) \
-                       FROM points WHERE points.track_id = {} LIMIT 1;'.format(q1.id))
+                            FROM points WHERE points.track_id = {} LIMIT 1;'.format(q1.id))
                 result = db.session.execute(q2)
                 trackjson = result.fetchone()
                 if trackjson:
@@ -333,10 +333,10 @@ def opengts():
     http://www.geotelematic.com/docs/StatusCodes.pdf
     """
     alt = request.args.get('alt')
-    apicode = request.args.get('id')
+    apicode = request.args.get('acct')
     code = request.args.get('code')
     gprmc = request.args.get('gprmc')
-    device = request.args.get('acct')
+    device = request.args.get('id')
     current_app.logger.debug('alt = {}'.format(alt))
     current_app.logger.debug('id = {}'.format(apicode))
     current_app.logger.debug('code = {}'.format(code))
@@ -378,10 +378,12 @@ def opengts():
         # points over and over again.
         points = Pointz.query.filter_by(
             track_id=trackdb.id,
-            geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'], gpsdata['lat'])
+            geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'],
+                                                 gpsdata['lat']),
+            timez=gpsdata['timez']
         ).first()
         if not points:
-            # we have track id, now we can finally submit location
+            # uff, now we can finally submit location
             points = Pointz.create(
                 track_id=trackdb.id,
                 geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'], gpsdata['lat']),
