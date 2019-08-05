@@ -208,21 +208,56 @@ def gpxtrace(gpx_id):
 @blueprint.route("/show/<int:track_id>")
 def showtrack(track_id):
     """Shows track on the map."""
-    return render_template(
-        "gpsdb/showtrack.html",
-        track_id=track_id
-    )
+    # check if track_id was provided and is an int, else flask sends 404
+    if isinstance(track_id, int):
+        # check if track exist
+        r1 = Trackz.query.filter_by(id=track_id).first()
+        if r1:
+            # get name of the track
+            trackname = r1.name
+            trackdesc = r1.description
+            # check if track was rendered from a GPX and that GPX is private
+            if r1.gpx_id:
+                r2 = Filez.query.filter_by(id=r1.gpx_id).first()
+                if r2:
+                    if r2.is_private:
+                        return render_template('404.html'), 404
+        else:
+            return render_template('404.html'), 404
+        return render_template(
+            "gpsdb/showtrack.html",
+            track_id=track_id,
+            trackname=trackname,
+            trackdesc=trackdesc
+        )
+
 
 @blueprint.route("/json/<int:track_id>")
 def geojson(track_id):
     """Sends a GeoJON built from a track."""
-    try:
-        # TODO: check if track exists and is not private
-        #
-        # example data for debugging purposes only:
-        # data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":\
-        #    "LineString","coordinates":[[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}}]}'
-        #
+    # fake track as default response
+    faketrack = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":\
+            "LineString","coordinates":[[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]}}]}'
+    response = current_app.response_class(
+        response=faketrack,
+        status=200,
+        mimetype='application/json'
+    )
+    # check if track_id was provided and is an int, else flask sends 404
+    if isinstance(track_id, int):
+        # check if track exist
+        r1 = Trackz.query.filter_by(id=track_id).first()
+        if r1:
+            # check if track was rendered from a GPX and that GPX is private
+            if r1.gpx_id:
+                r2 = Filez.query.filter_by(id=r1.gpx_id).first()
+                if r2:
+                    if r2.is_private:
+                        return response
+        # if track does not exist in our database, we are sending a fake one
+        # instead of
+        else:
+            return response
         # here we ask for a specific track in plain SQL as it is simpler
         # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
         sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
@@ -237,8 +272,6 @@ def geojson(track_id):
             mimetype='application/json'
         )
         return response
-    except:
-        return ""
 
 
 @blueprint.route("/data/opengts")

@@ -27,6 +27,15 @@ function initmap() {
       }
     }).addTo(map);
 
+    // resizing the window
+    // https://gis.stackexchange.com/questions/62491/sizing-leaflet-map-inside-bootstrap
+    $('#gnssmap').css("height", ($(window).height() - 150));
+    $(window).on("resize", resize);
+    resize();
+    function resize(){
+            $('#gnssmap').css("height", ($(window).height() - 150 ));
+    }
+
     map.fitBounds(tracklayer.getBounds());
   });
 }

@@ -87,13 +87,15 @@ footer .footer-nav {
 
 /* =============================================================================
  * LEAFLET
+ * height is only a stub, as it is getting resized later to proper screen
+ *  dimensions
    ========================================================================== */
 #gnssmap {
     width: 100%;
-    height: 600px;
+    height: 50px;
     position: relative;
     margin: 0;
-    padding :0;
+    padding: 0;
     border: 1px solid black;
-    border-radius: 8px;
+    border-radius: 6px;
 }

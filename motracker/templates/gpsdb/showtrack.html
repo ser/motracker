@@ -1,10 +1,16 @@
 
 {% extends "layout.html" %}
+{% block page_title %}Track {{ track_id }} map / moTracker{% endblock %}
 {% block content %}
 <script>
     var trackid = {{ track_id }};
 </script>
     <div class="container-fluid">
+        <ol class="breadcrumb bg-dark">
+            <li class="breadcrumb-item active">{{ track_id }}</li>
+            <li class="breadcrumb-item">{{ trackname }}</li>
+            <li class="breadcrumb-item">{{ trackdesc }}</li>
+        </ol>
         <div class="row">
             <div class="col-sm">
                 <div id="gnssmap"></div>
@@ -12,3 +18,4 @@
         </div>
     </div>
 {% endblock %}
+{% block footer %}{% endblock %}

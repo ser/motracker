@@ -52,8 +52,10 @@
 {% block content %}{% endblock %}
 </main>
 
-
+<!-- footer -->
+{% block footer %}
 {% include "footer.html" %}
+{% endblock %}
 
 <!-- JavaScript at the bottom for fast page loading -->
 {{ javascript_tag('main_js') | safe }}
