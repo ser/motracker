@@ -1,0 +1,20 @@
+
+{% extends "layout.html" %}
+{% block page_title %}Track {{ track_id }} map / moTracker{% endblock %}
+{% block content %}
+<script>
+    var trackid = 0;
+</script>
+    <div class="container-fluid">
+        <ol class="breadcrumb bg-dark">
+            <li class="breadcrumb-item active"><a href={{ url_for('user.userpage', username=username) }}>{{ username }}</a></li>
+            <li class="breadcrumb-item">Realtime</li>
+        </ol>
+        <div class="row">
+            <div class="col-sm">
+                <div id="gnssmap"></div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block footer %}{% endblock %}

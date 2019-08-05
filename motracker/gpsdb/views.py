@@ -18,11 +18,12 @@ from flask_login import current_user, login_required
 
 # from motracker.extensions import celery, db, filez
 from motracker.extensions import db
+from motracker.user.models import User
 from motracker.utils import flash_errors
 from sqlalchemy import text
 
 from .forms import AddFileForm, ApiForm
-from .models import Filez, Trackz, Pointz, ApiKey
+from .models import ApiKey, Filez, Trackz, Pointz
 
 # SUPPORT FUNCTIONS
 
@@ -191,10 +192,27 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
+@blueprint.route("/realtime/<string:username>")
+def realtime(username):
+    """Shows realtime position for a user."""
+    # TODO: add possibility for a user to hide (s)hes realtime location.
+    # check if track_id was provided and is a string, else flask sends 404.
+    if isinstance(username, str):
+        # check if user exists
+        r1 = User.query.filter_by(username=username).first()
+        if not r1:
+            return render_template('404.html'), 404
+        else:
+            return render_template(
+                "gpsdb/realtime.html",
+                username=username
+            )
 
-@blueprint.route("/gpxtrace/<int:gpx_id>")
+
+@blueprint.route("/gpx/<int:gpx_id>")
 def gpxtrace(gpx_id):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
+    # TODO: use celery to parse the track
     from motracker.utils import gpx2geo
     # check if we have the GPS already rendered, if not, render it
     track = Trackz.query.filter_by(gpx_id=gpx_id).first()
