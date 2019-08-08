@@ -7,6 +7,7 @@ from flask import current_app, flash
 from flask_login import current_user
 
 from motracker.gpsdb.models import Pointz, Trackz
+from motracker.user.models import User
 
 
 def flash_errors(form, category="warning"):

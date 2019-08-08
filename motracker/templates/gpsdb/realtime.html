@@ -3,8 +3,8 @@
 {% block page_title %}Track {{ track_id }} map / moTracker{% endblock %}
 {% block content %}
 <script>
-    var trackid = 0;
-    var username = '{{ username }}';
+    var trackid = {{ track_id }};
+    var realtime = 1;
 </script>
     <div class="container-fluid">
         <ol class="breadcrumb bg-dark">

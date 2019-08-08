@@ -10,6 +10,8 @@ require('jquery');
 require('popper.js');
 require('bootstrap');
 require('leaflet');
+require('leaflet-extra-markers');
+require('leaflet-realtime');
 
 // Your own code
 require('./plugins.js');

@@ -24,6 +24,7 @@ module.exports = {
       path.join(__dirname, 'node_modules', 'font-awesome', 'css', 'font-awesome.css'),
       path.join(__dirname, 'node_modules', 'bootswatch', 'dist', 'minty', 'bootstrap.css'),
       path.join(__dirname, 'node_modules', 'leaflet', 'dist', 'leaflet.css'),
+      path.join(__dirname, 'node_modules', 'leaflet-extra-markers', 'dist', 'css', 'leaflet.extra-markers.min.css'),
       path.join(__dirname, 'assets', 'css', 'style.css'),
     ],
   },
