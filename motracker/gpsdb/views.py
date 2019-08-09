@@ -203,19 +203,6 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
-@blueprint.route("/realtime/<int:track_id>")
-def realtime(track_id):
-    """Shows realtime position for a track."""
-    # TODO: add possibility for a user to hide (s)hes realtime location.
-    # check if username was provided and is valid, else flask sends 404.
-    if isinstance(track_id, int):
-        # check if user exists
-        return render_template(
-            "gpsdb/realtime.html",
-            track_id=track_id
-        )
-
-
 @blueprint.route("/gpx/<int:gpx_id>")
 def gpxtrace(gpx_id):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
@@ -281,6 +268,25 @@ def showtrack(track_id):
         )
 
 
+@blueprint.route("/realtime/<int:track_id>")
+def realtime(track_id):
+    """Shows realtime position for a track."""
+    # TODO: add possibility for a user to hide (s)hes realtime location.
+    # check if username was provided and is valid, else flask sends 404.
+    if isinstance(track_id, int):
+        # check if track exist
+        r1 = Trackz.query.filter_by(id=track_id).first_or_404()
+        if r1:
+            # check track for username
+            userdb = User.query.filter_by(id=r1.user_id).first_or_404()
+            return render_template(
+                "gpsdb/realtime.html",
+                track_id=track_id,
+                device=r1.device,
+                username=userdb.username
+            )
+
+
 @blueprint.route("/json/<int:track_id>")
 def geojson(track_id):
     """Sends a GeoJON built from a track."""
@@ -306,13 +312,17 @@ def geojson(track_id):
         else:
             return fakeresponse
         # here we ask for a specific track in plain SQL as it is simpler
-        # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
-        sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
-                FROM points WHERE points.track_id = {};'.format(track_id))
+
+        # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough - but it does not work as subq?
+        # sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
+        #        FROM points WHERE points.track_id = {};'.format(track_id))
+
+        sql = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
+                   FROM points WHERE track_id = {}) as subq'.format(track_id))
         result = db.session.execute(sql)
         trackjson = result.fetchone()  # TODO: maybe .fetchall() some day?
         current_app.logger.debug(trackjson)
-        data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":' + trackjson[0] + '}]}'
+        data = '{"type":"FeatureCollection","features":[' + trackjson[0] + ']}'
         response = current_app.response_class(
             response=data,
             status=200,

@@ -8,8 +8,9 @@
 </script>
     <div class="container-fluid">
         <ol class="breadcrumb bg-dark">
-            <li class="breadcrumb-item active"><a href={{ url_for('user.userpage', username=username) }}>{{ username }}</a></li>
-            <li class="breadcrumb-item">Realtime</li>
+            <li class="breadcrumb-item active"><span class="badge badge-primary"><a href={{ url_for('user.userpage', username=username) }}>{{ username }}</a></span></li>
+            <li class="breadcrumb-item">{{ device }}</li>
+            <li class="breadcrumb-item">realtime</li>
         </ol>
         <div class="row">
             <div class="col-sm">

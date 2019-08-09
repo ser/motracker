@@ -7,7 +7,8 @@
 </script>
     <div class="container-fluid">
         <ol class="breadcrumb bg-dark">
-            <li class="breadcrumb-item active">{{ track_id }}</li>
+            <li class="breadcrumb-item active"><span class="badge badge-primary"><a href={{ url_for('user.userpage', username=username) }}>{{ username }}</a></span></li>
+            <li class="breadcrumb-item">{{ track_id }}</li>
             <li class="breadcrumb-item">{{ trackname }}</li>
             <li class="breadcrumb-item">{{ trackdesc }}</li>
         </ol>
