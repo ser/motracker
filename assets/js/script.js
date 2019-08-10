@@ -14,7 +14,7 @@
 
         // loading geoJSON
         var map = L.map('gnssmap'),
-            realtime = L.realtime(`/gnss/jsonr/${trackid}`, {
+            realtime = L.realtime(`/gnss/jsonp/one/${trackid}`, {
                 interval: 30 * 1000
         }).addTo(map);
 

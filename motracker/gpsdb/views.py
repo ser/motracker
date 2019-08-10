@@ -3,6 +3,7 @@
 from datetime import datetime
 
 import gpxpy
+import json
 import pynmea2
 import strgen
 from flask import (
@@ -332,8 +333,8 @@ def geojson(track_id):
         return response
 
 
-@blueprint.route("/jsonr/<int:track_id>")
-def geojsonr(track_id):
+@blueprint.route("/jsonp/<string:jtype>/<int:track_id>")
+def geojsonr(jtype, track_id):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
@@ -342,7 +343,7 @@ def geojsonr(track_id):
         mimetype='application/json'
     )
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    if isinstance(track_id, int) and isinstance(jtype, str):
         # check if track exist
         r1 = Trackz.query.filter_by(id=track_id).first()
         if r1:
@@ -352,19 +353,34 @@ def geojsonr(track_id):
             # simplifying things, we are showing last recorded position
             # of specified track
             # q2 = Pointz.query.filter_by(track_id=q1.id).order_by(Pointz.timez.desc()).first()
-            #q2 = text('SELECT ST_AsGeoJSON(points.geom ORDER BY points.timez DESC,6) \
+            # q2 = text('SELECT ST_AsGeoJSON(points.geom ORDER BY points.timez DESC,6) \
             #           FROM points WHERE points.track_id = {}'.format(r1.id))
+            if jtype == "one":
+                limit = "LIMIT 1"
+            else:
+                limit = ""
             q2 = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT geom,\
                       id, timez, altitude, speed, bearing, sat, comment from \
-                      points WHERE track_id = {} ORDER BY timez DESC LIMIT 1) \
-                      as subq'.format(r1.id))
+                      points WHERE track_id = {} ORDER BY timez DESC {}) \
+                      as subq'.format(r1.id, limit))
+            current_app.logger.debug(q2)
             result = db.session.execute(q2)
-            trackjson = result.fetchone()
+            trackjson = result.fetchall()
             if trackjson:
-                current_app.logger.debug(trackjson)
-                # data = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":' \
-#                    + trackjson[0] + '}]}'
-                data = '{"type":"FeatureCollection","features":[' + trackjson[0] + ']}'
+                # if we have only one point
+                if len(trackjson) == 1:
+                    y = trackjson[0][0]
+                # if we want multiple points
+                else:
+                    y = ""
+                    z = 0
+                    for x in trackjson:
+                        if z != 0:
+                            y += ", "
+                        y += (x[0])
+                        z += 1
+                data = '{"type":"FeatureCollection","features":[' + y + ']}'
+                current_app.logger.debug(y)
                 response = current_app.response_class(
                     response=data,
                     status=200,
