@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """User views."""
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, Markup, current_app, render_template
 from flask_login import login_required
 from .models import User
 
 from motracker.gpsdb.models import Trackz
+from motracker.utils import track2svgpoints
 
 blueprint = Blueprint("user", __name__, url_prefix="/users", static_folder="../static")
 
@@ -26,12 +27,18 @@ def userpage(username):
     if not q1.is_private and q2:
         current_app.logger.debug('Found {} tracks for user {}.'.format(len(q2),
                                                                        username))
+        # get a SVG overview
+        svgo = {}
+        for x in q2:
+            svgo[x.id] = Markup(track2svgpoints(x.id))
+
         return render_template(
             "users/showoff.html",
             firstname=q1.first_name,
             lastname=q1.last_name,
             username=username,
-            trackz=q2
+            trackz=q2,
+            svgo=svgo
         )
     else:  # page is private
         return render_template('404.html'), 404

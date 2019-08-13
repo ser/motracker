@@ -13,6 +13,7 @@
                     <i class="fa fa-compass"></i> {{ track.id }} <span
                        class="pull-right badge badge-secondary">{{ track.trackdate }}</span>
                 </div>
+                {{ svgo[track.id] }}
                 <div class="card-body">
                     <h5 class="card-title">{{ track.name }}</h5>
                     {{ track.description }}

@@ -5,9 +5,17 @@ from datetime import datetime
 import gpxpy
 from flask import current_app, flash
 from flask_login import current_user
+from sqlalchemy import text
 
+from motracker.extensions import db
 from motracker.gpsdb.models import Pointz, Trackz
-from motracker.user.models import User
+
+# from motracker.user.models import User
+
+# fakesvg is presented when needed in other functions
+fakesvg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180">\
+           <rect x="50" y="20" rx="20" ry="20" width="150" height="150" style="\
+           fill:red;stroke:black;stroke-width:5;opacity:0.5" /></svg>'
 
 
 def flash_errors(form, category="warning"):
@@ -72,3 +80,40 @@ def gpx2geo(gpx_id):
                 )
     # TODO add finished datetime.utcnow() to stop
     return(newtrack.id)
+
+
+def track2svgline(track_id):
+    """Prepares an SVG overview built from a track."""
+    # check if track exist
+    r1 = Trackz.query.filter_by(id=track_id).first()
+    if not r1:
+        return fakesvg
+    else:
+        # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
+        sql = text('SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
+                FROM points WHERE points.track_id = {};'.format(track_id))
+        result = db.session.execute(sql)
+        tracksvg = result.fetchone()
+        current_app.logger.debug(tracksvg)
+        data = '<svg xmlns="http://www.w3.org/2000/svg">\
+                <path d="{}" fill="cadetblue" /></svg>'.format(tracksvg[0])
+        db.session.close()
+        return data
+
+def track2svgpoints(track_id):
+    """Prepares an SVG overview built from a track."""
+    # check if track exist
+    r1 = Trackz.query.filter_by(id=track_id).first()
+    if not r1:
+        return fakesvg
+    else:
+        data = '<svg xmlns="http://www.w3.org/2000/svg">'
+        sql = text('SELECT ST_AsSVG(geom) FROM points WHERE points.track_id = {};'.format(track_id))
+        result = db.session.execute(sql)
+        tracksvg = result.fetchall()
+        current_app.logger.debug(tracksvg)
+        for x in tracksvg:
+            data += '<circle {} r="0.00001" />'.format(x[0])
+        data += '</svg>'
+        current_app.logger.debug(data)
+        return data
