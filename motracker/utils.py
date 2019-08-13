@@ -113,7 +113,7 @@ def track2svgpoints(track_id):
         tracksvg = result.fetchall()
         current_app.logger.debug(tracksvg)
         for x in tracksvg:
-            data += '<circle {} r="0.00001" />'.format(x[0])
+            data += '<circle {} r="0.0001" />'.format(x[0])
         data += '</svg>'
         current_app.logger.debug(data)
         return data

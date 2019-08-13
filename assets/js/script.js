@@ -93,4 +93,20 @@
             initmap();
         }
     }
+var all = document.getElementsByTagName("svg");
+for (var i=0, max=all.length; i < max; i++) {
+var bbox = all[i].getBBox();
+
+var viewBox;
+
+if(bbox.width > bbox.height){
+viewBox = [bbox.x, bbox.y - (bbox.width - bbox.height)/2, bbox.width, bbox.width].join(" ")
+} else if (bbox.width < bbox.height){
+viewBox = [bbox.x - (bbox.height - bbox.width)/2, bbox.y, bbox.height, bbox.height].join(" ")
+} else {
+viewBox - [bbox.x, bbox.y, bbox.width, bbox.height].join(" ");
+}
+all[i].setAttribute("viewBox", viewBox);
+console.log(viewBox);
+}
 
