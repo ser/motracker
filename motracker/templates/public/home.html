@@ -4,8 +4,8 @@
 <!-- Main jumbotron for a primary marketing message or call to action -->
 <div class="jumbotron">
     <div class="container">
-      <h1 class="display-3">Welcome to m<i class="fa fa-bullseye"></i>Tracker</h1>
-      <p>This is a server which hosts your m<i class="fa fa-bullseye"></i>vements.</p>
+      <h1 class="display-3">Welcome to m<i class="fa fa-compass"></i>Tracker</h1>
+      <p>This is a server which hosts your m<i class="fa fa-compass"></i>vements.</p>
       <p><a href="{{ url_for('public.about') }}" class="btn btn-primary btn-large">Learn more &raquo;</a></p>
     </div>
 </div><!-- /.jumbotron -->
@@ -16,18 +16,18 @@
       <h2><i class="fa fa-code"></i> Live and history</h2>
       <p>You're able to show your current whereabouts or share history of your
           journys.</p>
-      <p><a class="btn btn-outline-secondary" href="http://getbootstrap.com/">Official website &raquo;</a></p>
+      <p><a class="btn btn-outline-secondary" href="{{ url_for('public.about') }}">Learn more &raquo;</a></p>
     </div>
     <div class="col-lg-4">
       <h2><i class="fa fa-edit"></i> Privacy or openess</h2>
       <p>In every moment you can make your data private and/or save it locally. You can also share everything. You chose.</p>
-      <p><a href="http://wtforms.simplecodes.com/" class="btn btn-outline-secondary">Official website &raquo;</a></p>
+      <p><a href="{{ url_for('public.about') }}" class="btn btn-outline-secondary">Learn more &raquo;</a></p>
     </div>
     <div class="col-lg-4">
       <h2><i class="fa fa-flask"></i> Geospatial science</h2>
       <p>Underneath is an efficient geospatial engine based on most modern
           technologies. It's faster than light. No joke.</p>
-      <p><a href="http://www.sqlalchemy.org/" class="btn btn-outline-secondary">Official website &raquo;</a></p>
+      <p><a href="{{ url_for('public.about') }}" class="btn btn-outline-secondary">Learn more &raquo;</a></p>
    </div>
   </div><!-- /.row -->
 </div>

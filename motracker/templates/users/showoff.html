@@ -3,7 +3,27 @@
 {% block page_title %}{{ username }} show off / moTracker{% endblock %}
 {% block content %}
     <div class="container">
-	<h2>{{ firstname }} {{ lastname }} ({{ username }})</h2>
+        <div class="jumbotron">
+     	    <h2>{{ firstname }} {{ lastname }} ({{ username }})</h2>
+        </div>
+        <div class="card-columns">
+            {% for track in trackz|sort(attribute='id', reverse = True) %}
+            <div class="card">
+                <div class="card-header">
+                    <i class="fa fa-compass"></i> {{ track.id }} <span
+                       class="pull-right badge badge-secondary">{{ track.trackdate }}</span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">{{ track.name }}</h5>
+                    {{ track.description }}
+                </div>
+                <div class="card-footer">
+                    <a href="{{ url_for('gpsdb.showtrack', track_id=track.id) }}"
+                       class="btn btn-info btn-sm btn-block">Show on a map</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
 {% endblock %}
 

@@ -40,10 +40,11 @@ def gpx2geo(gpx_id):
     # Create track in db
     newtrack = Trackz.create(
         user_id=current_user.get_id(),
-        name="Rendered GPX file {}.gpx".format(gpx_id),
-        description=gpx.creator,
+        name="GPX",
+        description="Rendered file {}.gpx".format(gpx_id),
         start=datetime.utcnow(),
-        gpx_id=gpx_id
+        gpx_id=gpx_id,
+        device=gpx.creator
     )
     # Create all points
     for track in gpx.tracks:

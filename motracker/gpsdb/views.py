@@ -397,6 +397,45 @@ def geojsonr(jtype, track_id):
         return fakeresponse
 
 
+@blueprint.route("/img/<int:track_id>.svg")
+def geosvg(track_id):
+    """Sends a GeoJON built from a track."""
+    # fake response is the same for all cases
+    fakesvg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180">\
+        <rect x="50" y="20" rx="20" ry="20" width="150" height="150" style="\
+        fill:red;stroke:black;stroke-width:5;opacity:0.5" /></svg>'
+    fakeresponse = current_app.response_class(
+        response=fakesvg,
+        status=200,
+        mimetype='image/svg+xml'
+    )
+    # check if track_id was provided and is an int, else flask sends 404
+    if isinstance(track_id, int):
+        # check if track exist
+        r1 = Trackz.query.filter_by(id=track_id).first()
+        if not r1:
+            # if track does not exist in our database, we are sending a fake one
+            # instead of
+            return fakeresponse
+        # here we ask for a specific track in plain SQL as it is simpler
+
+        # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough - but it does not work as subq?
+        sql = text('SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
+                FROM points WHERE points.track_id = {};'.format(track_id))
+        result = db.session.execute(sql)
+        tracksvg = result.fetchone()  # TODO: maybe .fetchall() some day?
+        current_app.logger.debug(tracksvg)
+        data = '<svg xmlns="http://www.w3.org/2000/svg">\
+            <path d="{}" fill="cadetblue" /></svg>'.format(tracksvg[0])
+        response = current_app.response_class(
+            response=data,
+            status=200,
+            mimetype='image/svg+xml'
+        )
+        db.session.close()
+        return response
+
+
 @blueprint.route("/data/opengts")
 def opengts():
     """Receives data from OpenGTS compatible receiver device.

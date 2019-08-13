@@ -62,7 +62,7 @@ class Trackz(SurrogatePK, Model):
 
     __tablename__ = "tracks"
     name = Column(db.String(255), unique=False, nullable=False)
-    device = Column(db.String(20), unique=False, nullable=False)
+    device = Column(db.String(255), unique=False, nullable=False)
     trackdate = Column(db.Date(), nullable=True)
     user_id = reference_col("users", nullable=True)
     user = relationship('User', cascade="all,delete", backref='trackusers')
