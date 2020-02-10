@@ -10,15 +10,17 @@ from flask import (
     Blueprint,
     current_app,
     flash,
+    jsonify,
     redirect,
     render_template,
     request,
+    session,
     url_for,
 )
 from flask_login import current_user, login_required
 
 # from motracker.extensions import celery, db, filez
-from motracker.extensions import db
+from motracker.extensions import csrf_protect, db
 from motracker.user.models import User
 from motracker.utils import gpx2geo, flash_errors
 from sqlalchemy import text
@@ -62,10 +64,10 @@ def parse_rmc(gprmc):
 
 ###########
 # MAIN PART
-blueprint = Blueprint("gpsdb", __name__, url_prefix="/gnss", static_folder="../static")
+blueprint = Blueprint("gpsdb", __name__, url_prefix="", static_folder="../static")
 
 
-@blueprint.route("/apikey", methods=["GET", "POST"])
+@blueprint.route("/gnss/apikey", methods=["GET", "POST"])
 @login_required
 def gpsapi():
     """(re)Generate and/or present API key."""
@@ -97,7 +99,7 @@ def gpsapi():
         apikey=apikey)
 
 
-@blueprint.route("/files", methods=["GET", "POST"])
+@blueprint.route("/gnss/files", methods=["GET", "POST"])
 @login_required
 def filezsave():
     """Upload previously recorded tracks."""
@@ -204,7 +206,7 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
-@blueprint.route("/gpx/<int:gpx_id>")
+@blueprint.route("/gnss/gpx/<int:gpx_id>")
 def gpxtrace(gpx_id):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
     # TODO: use celery to parse the track
@@ -219,7 +221,7 @@ def gpxtrace(gpx_id):
                             track_id=track_id))
 
 
-@blueprint.route("/tracks/<string:username>")
+@blueprint.route("/gnss/tracks/<string:username>")
 def usertracks(username):
     """Lists all tracks for the particular user."""
     # check if username was provided and is valid, else flask sends 404.
@@ -239,7 +241,7 @@ def usertracks(username):
             return render_template('404.html'), 404
 
 
-@blueprint.route("/show/<int:track_id>")
+@blueprint.route("/gnss/show/<int:track_id>")
 def showtrack(track_id):
     """Shows track on the map."""
     # check if track_id was provided and is an int, else flask sends 404
@@ -269,7 +271,7 @@ def showtrack(track_id):
         )
 
 
-@blueprint.route("/realtime/<int:track_id>")
+@blueprint.route("/gnss/realtime/<int:track_id>")
 def realtime(track_id):
     """Shows realtime position for a track."""
     # TODO: add possibility for a user to hide (s)hes realtime location.
@@ -288,7 +290,7 @@ def realtime(track_id):
             )
 
 
-@blueprint.route("/json/<int:track_id>")
+@blueprint.route("/gnss/json/<int:track_id>")
 def geojson(track_id):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
@@ -333,7 +335,7 @@ def geojson(track_id):
         return response
 
 
-@blueprint.route("/jsonp/<string:jtype>/<int:track_id>")
+@blueprint.route("/gnss/jsonp/<string:jtype>/<int:track_id>")
 def geojsonr(jtype, track_id):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
@@ -397,7 +399,7 @@ def geojsonr(jtype, track_id):
         return fakeresponse
 
 
-@blueprint.route("/img/<int:track_id>.svg")
+@blueprint.route("/gnss/img/<int:track_id>.svg")
 def geosvg(track_id):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
@@ -436,7 +438,7 @@ def geosvg(track_id):
         return response
 
 
-@blueprint.route("/data/opengts")
+@blueprint.route("/gnss/data/opengts")
 def opengts():
     """Receives data from OpenGTS compatible receiver device.
 
@@ -518,3 +520,31 @@ def opengts():
             current_app.logger.debug('We already have that point recorded. Thank you.')
         #
     return 'OK'
+
+
+@blueprint.route("/client/index.php", methods=["GET", "POST"])
+@csrf_protect.exempt
+def uloggerlogin():
+    """μlogger client compatibility."""
+    current_app.logger.debug(request.get_data())
+    if request.method == 'POST':
+        action = request.form["action"]
+        if action == "auth":
+            # username and password are the same at the moment
+            password = request.form["pass"]
+            username = request.form["user"]
+            # parsing id to match GNSS Api
+            haskey = ApiKey.query.filter_by(apikey=password).first()
+            if haskey:
+                user_id = haskey.user_id
+                current_app.logger.info("Found valid API code belonging to User ID = {}.".format(user_id))
+                session[username] = username
+                # send a success to the app
+                return jsonify(error=False)
+            else:
+                current_app.logger.info("No user has such an API key = {}. Ignoring request then.".format(id))
+                # send error to the app as we do not have such a user
+                return jsonify(error=True, message="go away")
+
+
+    return render_template("public/home.html")
