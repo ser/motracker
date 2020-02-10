@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """Gpsdb views."""
 from datetime import datetime
 
@@ -563,5 +562,65 @@ def uloggerlogin():
             )
             current_app.logger.debug('trackdb: {}'.format(trackdb))
             return jsonify(error=False, trackid=trackdb.id)
+        elif action == "addpos":
+            if 'username' in session:
+                username = session['username']
+            else:
+                current_app.logger.info("Not logged in.")
+                return jsonify(error=True, message="go away")
+            # adding new point to existing track
+            lat = request.form["lat"]
+            lon = request.form["lon"]
+            tstamp = datetime.fromtimestamp(int(request.form["time"]))
+            trackid = request.form["trackid"]
+            try:
+                alti = request.form["altitude"]
+            except Exception as e:
+                alti = 0
+                current_app.logger.debug(e)
+            try:
+                provider = request.form["provider"]
+            except Exception as e:
+                provider = "unknown"
+                current_app.logger.debug(e)
+            try:
+                accu = request.form["accuracy"]
+            except Exception as e:
+                accu = "unknown"
+                current_app.logger.debug(e)
+            # we have track id, now we must check if the location was not already
+            # submitted, as it looks like ulogger sometimes tries to resubmit the same
+            # points over and over again.
+            points = Pointz.query.filter_by(
+                track_id=trackid,
+                geom='SRID=4326;POINT({} {})'.format(lon, lat),
+                timez=tstamp
+            ).first()
+            if not points:
+                # uff, now we can finally submit location
+                newpoint = Pointz.create(
+                    track_id=trackid,
+                    geom='SRID=4326;POINT({} {})'.format(lon, lat),
+                    altitude=alti,
+                    timez=tstamp,
+                    provider=provider,
+                    comment=accu,
+                    speed=0,
+                    bearing=0,
+                    hdop=0,
+                    vdop=0,
+                    pdop=0,
+                    sat=0
+                )
+                if newpoint:
+                    current_app.logger.info('New point added: {}'.format(newpoint))
+                    return jsonify(error=False)
+                else:
+                    return jsonify(error=True, message="problemz with adding, check the server.")
+            else:
+                current_app.logger.info('This point is already added, ignoring: {}'.format(points))
+                return jsonify(error=False)
+            db.session.commit
+            db.session.close()
 
-    return render_template("public/home.html")
+# vim: tabstop=4 shiftwidth=4 expandtab
