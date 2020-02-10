@@ -538,13 +538,30 @@ def uloggerlogin():
             if haskey:
                 user_id = haskey.user_id
                 current_app.logger.info("Found valid API code belonging to User ID = {}.".format(user_id))
-                session[username] = username
+                session['username'] = user_id
                 # send a success to the app
                 return jsonify(error=False)
             else:
                 current_app.logger.info("No user has such an API key = {}. Ignoring request then.".format(id))
                 # send error to the app as we do not have such a user
                 return jsonify(error=True, message="go away")
-
+        elif action == "addtrack":
+            if 'username' in session:
+                username = session['username']
+            else:
+                current_app.logger.info("Not logged in.")
+                return jsonify(error=True, message="go away")
+            # adding a new track
+            trackname = request.form["track"]
+            trackdb = Trackz.create(
+                name=trackname,
+                user_id=username,
+                start=datetime.utcnow(),
+                description="LiveTracking",
+                device="μlogger",
+                trackdate=datetime.utcnow()
+            )
+            current_app.logger.debug('trackdb: {}'.format(trackdb))
+            return jsonify(error=False, trackid=trackdb.id)
 
     return render_template("public/home.html")
