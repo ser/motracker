@@ -14,7 +14,7 @@
 
         // loading geoJSON
         var map = L.map('gnssmap'),
-            realtime = L.realtime(`/gnss/jsonp/one/${trackid}`, {
+            realtime = L.realtime(`/gnss/jsonp/one/${trackrid}`, {
                 interval: 30 * 1000
         }).addTo(map);
 
@@ -47,7 +47,7 @@
     function initmap() {
         var map;
         var geotrack = $.ajax({
-            url: `/gnss/json/${trackid}`,
+            url: `/gnss/json/${trackrid}`,
             dataType: 'json',
             success: console.log('Track data successfully loaded.'),
             error: function (xhr) {
@@ -85,7 +85,7 @@
             map.fitBounds(tracklayer.getBounds());
         });
     }
-    if (typeof trackid !== 'undefined') {
+    if (typeof trackrid !== 'undefined') {
         if (typeof realtime !== 'undefined') {
             initrealtime();
         }

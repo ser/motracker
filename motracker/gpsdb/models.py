@@ -4,6 +4,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geometry
+from sqlalchemy.dialects.postgresql import UUID
 
 from motracker.database import (
     Column,
@@ -41,19 +42,22 @@ class Filez(SurrogatePK, Model):
     when_uploaded = Column(db.DateTime(), nullable=False,
                            default=datetime.utcnow)
     is_private = db.Column(db.Boolean, nullable=True)
+    rid = db.Column(UUID(as_uuid=True), unique=True, nullable=False)
     description = db.Column(db.String, nullable=False)
 
-    def __init__(self, is_private, description, **kwargs):
+    def __init__(self, is_private, description, rid, **kwargs):
         """Create instance."""
         db.Model.__init__(self,
                           is_private=is_private,
                           description=description,
+                          rid=rid,
                           **kwargs)
 
     def __repr__(self):
         """Represent instance as a unique string."""
         return '<id: {}, desc: {}, when: {}>'.format(self.id,
                                                      self.description,
+                                                     self.rid,
                                                      self.when_uploaded)
 
 
@@ -69,6 +73,7 @@ class Trackz(SurrogatePK, Model):
     start = Column(db.DateTime(), nullable=True)
     stop = Column(db.DateTime(), nullable=True)
     description = db.Column(db.String, nullable=True)
+    rid = db.Column(UUID(as_uuid=True), unique=True, nullable=False)
     gpx_id = reference_col("files", nullable=True)
 
     def __init__(self, name, **kwargs):

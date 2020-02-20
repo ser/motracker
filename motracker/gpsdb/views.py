@@ -1,10 +1,14 @@
+# -*- coding: utf-8 -*-
 """Gpsdb views."""
-from datetime import datetime
 
 import gpxpy
 import json
 import pynmea2
 import strgen
+import uuid
+
+from datetime import datetime
+
 from flask import (
     Blueprint,
     current_app,
@@ -109,6 +113,7 @@ def filezsave():
             file = request.files['upload_file']
             try:
                 # At the moment we support UTF-8 files and compatible only
+                rid = uuid.uuid4()
                 parsedfile = file.stream.read().decode('utf-8')
                 ourgpx = gpxpy.parse(parsedfile)
                 # file is parsing, so we are extracting basic interesting data about it
@@ -129,13 +134,14 @@ def filezsave():
             dbfile = Filez.create(
                 user_id=current_user.get_id(),
                 is_private=form.is_private.data,
+                rid=rid,
                 description=form.description.data
             )
             # all tracks are saved with filename which is equal to database ID
-            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(dbfile.id) + ".gpx"
+            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(rid) + ".gpx"
             with open(fname, "w", encoding="utf-8") as f:
                 f.write(parsedfile)
-            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(dbfile.id) + ".txt"
+            fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(rid) + ".txt"
             with open(fname, "w", encoding="utf-8") as f:
                 try:
                     f.write("Number of points: {}\n".format(points_no))
@@ -186,7 +192,7 @@ def filezsave():
                 except Exception as e:
                     current_app.logger.debug(e)
             flash("Successfully uploaded your GPX file.", "info")
-            current_app.logger.debug("Saved File: " + str(dbfile.id) + ".gpx")
+            current_app.logger.debug("Saved File: " + str(rid) + ".gpx")
         else:
             flash_errors(form)
     # Present all files belonging to user
@@ -195,7 +201,7 @@ def filezsave():
     gpxq = {}
     for x in query:
         # A brief description presentation
-        fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.id) + ".txt"
+        fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.rid) + ".txt"
         with open(fname, 'r', encoding="utf-8") as f:
             read_file = f.readlines()
             gpxq[x.id] = read_file
@@ -205,19 +211,20 @@ def filezsave():
         gpxq=gpxq,
         form=form)
 
-@blueprint.route("/gnss/gpx/<int:gpx_id>")
-def gpxtrace(gpx_id):
+@blueprint.route("/gnss/gpx/<string:gpx_rid>")
+def gpxtrace(gpx_rid):
     """Initiates convertion of GPX into our DB and redirects to show GPX on a map."""
     # TODO: use celery to parse the track
     # check if we have the GPS already rendered, if not, render it
-    track = Trackz.query.filter_by(gpx_id=gpx_id).first()
+    rid = uuid.UUID(gpx_rid)
+    track = Trackz.query.filter_by(gpx_rid=rid).first()
     if not track:
         # get username current user
-        track_id = gpx2geo(gpx_id)
+        track_rid = gpx2geo(rid)
     else:
-        track_id = track.id
+        track_rid = track.rid
     return redirect(url_for('gpsdb.showtrack',
-                            track_id=track_id))
+                            track_rid=str(track_rid)))
 
 
 @blueprint.route("/gnss/tracks/<string:username>")
@@ -240,13 +247,14 @@ def usertracks(username):
             return render_template('404.html'), 404
 
 
-@blueprint.route("/gnss/show/<int:track_id>")
-def showtrack(track_id):
+@blueprint.route("/gnss/show/<string:track_rid>")
+def showtrack(track_rid):
     """Shows track on the map."""
-    # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    # check if track_rid was provided and is an int, else flask sends 404
+    if isinstance(track_rid, str):
+        rid = uuid.UUID(track_rid)
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_id).first()
+        r1 = Trackz.query.filter_by(rid=rid).first()
         if r1:
             # get username of person who owns the track
             userdb = User.query.filter_by(id=r1.user_id).first_or_404()
@@ -263,7 +271,7 @@ def showtrack(track_id):
             return render_template('404.html'), 404
         return render_template(
             "gpsdb/showtrack.html",
-            track_id=track_id,
+            track_rid=track_rid,
             trackname=trackname,
             trackdesc=trackdesc,
             username=userdb.username
@@ -289,8 +297,8 @@ def realtime(track_id):
             )
 
 
-@blueprint.route("/gnss/json/<int:track_id>")
-def geojson(track_id):
+@blueprint.route("/gnss/json/<string:track_rid>")
+def geojson(track_rid):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
@@ -299,9 +307,10 @@ def geojson(track_id):
         mimetype='application/json'
     )
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    if isinstance(track_rid, str):
+        rid = uuid.UUID(track_rid)
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_id).first()
+        r1 = Trackz.query.filter_by(rid=rid).first()
         if r1:
             # check if track was rendered from a GPX and that GPX is private
             if r1.gpx_id:
@@ -320,7 +329,7 @@ def geojson(track_id):
         #        FROM points WHERE points.track_id = {};'.format(track_id))
 
         sql = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
-                   FROM points WHERE track_id = {}) as subq'.format(track_id))
+                   FROM points WHERE track_id = {}) as subq'.format(r1.id))
         result = db.session.execute(sql)
         trackjson = result.fetchone()  # TODO: maybe .fetchall() some day?
         current_app.logger.debug(trackjson)
@@ -334,8 +343,8 @@ def geojson(track_id):
         return response
 
 
-@blueprint.route("/gnss/jsonp/<string:jtype>/<int:track_id>")
-def geojsonr(jtype, track_id):
+@blueprint.route("/gnss/jsonp/<string:jtype>/<string:track_rid>")
+def geojsonr(jtype, track_rid):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
@@ -344,9 +353,9 @@ def geojsonr(jtype, track_id):
         mimetype='application/json'
     )
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int) and isinstance(jtype, str):
+    if isinstance(track_rid, str) and isinstance(jtype, str):
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_id).first()
+        r1 = Trackz.query.filter_by(id=track_rid).first()
         if r1:
             # check if track was rendered from a GPX, it is not realtime
             if r1.gpx_id:
@@ -362,8 +371,8 @@ def geojsonr(jtype, track_id):
                 limit = ""
             q2 = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT geom,\
                       id, timez, altitude, speed, bearing, sat, comment from \
-                      points WHERE track_id = {} ORDER BY timez DESC {}) \
-                      as subq'.format(r1.id, limit))
+                      points WHERE track_rid = {} ORDER BY timez DESC {}) \
+                      as subq'.format(r1.rid, limit))
             current_app.logger.debug(q2)
             result = db.session.execute(q2)
             trackjson = result.fetchall()
@@ -398,8 +407,8 @@ def geojsonr(jtype, track_id):
         return fakeresponse
 
 
-@blueprint.route("/gnss/img/<int:track_id>.svg")
-def geosvg(track_id):
+@blueprint.route("/gnss/img/<string:track_rid>.svg")
+def geosvg(track_rid):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
     fakesvg = '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="180">\
@@ -411,9 +420,10 @@ def geosvg(track_id):
         mimetype='image/svg+xml'
     )
     # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_id, int):
+    if isinstance(track_rid, str):
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_id).first()
+        rid = uuid.UUID(track_rid)
+        r1 = Trackz.query.filter_by(id=rid).first()
         if not r1:
             # if track does not exist in our database, we are sending a fake one
             # instead of
@@ -422,7 +432,7 @@ def geosvg(track_id):
 
         # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough - but it does not work as subq?
         sql = text('SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
-                FROM points WHERE points.track_id = {};'.format(track_id))
+                FROM points WHERE points.track_id = {};'.format(track_rid))
         result = db.session.execute(sql)
         tracksvg = result.fetchone()  # TODO: maybe .fetchall() some day?
         current_app.logger.debug(tracksvg)
@@ -482,7 +492,8 @@ def opengts():
                 start=datetime.utcnow(),
                 description="LiveTracking",
                 device=device,
-                trackdate=gpsdata['trackdate']
+                trackdate=gpsdata['trackdate'],
+                rid=uuid.uuid4()
             )
             current_app.logger.debug('trackdb: {}'.format(trackdb))
         # we have track id, now we must check if the location was not already
@@ -558,7 +569,8 @@ def uloggerlogin():
                 start=datetime.utcnow(),
                 description="LiveTracking",
                 device="μlogger",
-                trackdate=datetime.utcnow()
+                trackdate=datetime.utcnow(),
+                rid=uuid.uuid4()
             )
             current_app.logger.debug('trackdb: {}'.format(trackdb))
             return jsonify(error=False, trackid=trackdb.id)

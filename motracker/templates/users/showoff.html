@@ -1,6 +1,6 @@
 
 {% extends "layout.html" %}
-{% block page_title %}{{ username }} show off / moTracker{% endblock %}
+{% block page_title %}{{ username }} show off / m⓿T{% endblock %}
 {% block content %}
     <div class="container">
         <div class="jumbotron">
@@ -12,6 +12,11 @@
                 <div class="card-header">
                     <i class="fa fa-compass"></i> {{ track.id }} <span
                        class="pull-right badge badge-secondary">{{ track.trackdate }}</span>
+                    <br>
+                    <a href="{{ url_for('gpsdb.showtrack',
+                        track_rid=track.rid) }}">
+                        <span class="pull-left badge badge-success">{{ track.rid }}</span>
+                    </a>
                 </div>
                 {{ svgo[track.id] }}
                 <div class="card-body">
@@ -19,7 +24,7 @@
                     {{ track.description }}
                 </div>
                 <div class="card-footer">
-                    <a href="{{ url_for('gpsdb.showtrack', track_id=track.id) }}"
+                    <a href="{{ url_for('gpsdb.showtrack', track_rid=track.rid) }}"
                        class="btn btn-info btn-sm btn-block">Show on a map</a>
                 </div>
             </div>
