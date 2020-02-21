@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
 
-import gpxpy
 import json
-import pynmea2
-import strgen
 import uuid
-
 from datetime import datetime
 
+import gpxpy
+import pynmea2
+import strgen
 from flask import (
     Blueprint,
     current_app,
@@ -21,16 +20,15 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from sqlalchemy import text
 
 # from motracker.extensions import celery, db, filez
 from motracker.extensions import csrf_protect, db
 from motracker.user.models import User
-from motracker.utils import gpx2geo, flash_errors
-from sqlalchemy import text
+from motracker.utils import flash_errors, gpx2geo
 
 from .forms import AddFileForm, ApiForm
-from .models import ApiKey, Filez, Trackz, Pointz
-
+from .models import ApiKey, Filez, Pointz, Trackz
 
 # SUPPORT FUNCTIONS and CONSTANTS
 # -------------------------------
@@ -56,12 +54,7 @@ def parse_rmc(gprmc):
     trackdate = valuez.datestamp
 
     return dict(
-        timez=timez,
-        lat=lat,
-        lon=lon,
-        speed=speed,
-        bearing=bearing,
-        trackdate=trackdate
+        timez=timez, lat=lat, lon=lon, speed=speed, bearing=bearing, trackdate=trackdate
     )
 
 
@@ -92,14 +85,8 @@ def gpsapi():
         apikey = hasapi.apikey
     else:
         apikey = strgen.StringGenerator("[\w\d]{10}").render()
-        ApiKey.create(
-            user_id=current_user.get_id(),
-            apikey=apikey
-        )
-    return render_template(
-        "gpsdb/apikey.html",
-        form=form,
-        apikey=apikey)
+        ApiKey.create(user_id=current_user.get_id(), apikey=apikey)
+    return render_template("gpsdb/apikey.html", form=form, apikey=apikey)
 
 
 @blueprint.route("/gnss/files", methods=["GET", "POST"])
@@ -107,19 +94,21 @@ def gpsapi():
 def filezsave():
     """Upload previously recorded tracks."""
     form = AddFileForm()
-    if request.method == 'POST':
+    if request.method == "POST":
         if form.validate_on_submit():
             # Verify if the GPX is valid
-            file = request.files['upload_file']
+            file = request.files["upload_file"]
             try:
                 # At the moment we support UTF-8 files and compatible only
                 rid = uuid.uuid4()
-                parsedfile = file.stream.read().decode('utf-8')
+                parsedfile = file.stream.read().decode("utf-8")
                 ourgpx = gpxpy.parse(parsedfile)
                 # file is parsing, so we are extracting basic interesting data about it
                 length_2d = ourgpx.length_2d()
                 length_3d = ourgpx.length_3d()
-                moving_time, stopped_time, moving_distance, stopped_distance, max_speed = ourgpx.get_moving_data()
+                moving_time, stopped_time, moving_distance, stopped_distance, max_speed = (
+                    ourgpx.get_moving_data()
+                )
                 uphill, downhill = ourgpx.get_uphill_downhill()
                 start_time, end_time = ourgpx.get_time_bounds()
                 points_no = len(list(ourgpx.walk(only_points=True)))
@@ -127,15 +116,12 @@ def filezsave():
                 current_app.logger.info(e)
                 flash("Uploaded file is not a valid GPX. Try another one.", "warning")
                 query = Filez.query.filter_by(user_id=current_user.get_id()).all()
-                return render_template(
-                    "gpsdb/filez.html",
-                    allfilez=query,
-                    form=form)
+                return render_template("gpsdb/filez.html", allfilez=query, form=form)
             dbfile = Filez.create(
                 user_id=current_user.get_id(),
                 is_private=form.is_private.data,
                 rid=rid,
-                description=form.description.data
+                description=form.description.data,
             )
             # all tracks are saved with filename which is equal to database ID
             fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(rid) + ".gpx"
@@ -202,14 +188,11 @@ def filezsave():
     for x in query:
         # A brief description presentation
         fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(x.rid) + ".txt"
-        with open(fname, 'r', encoding="utf-8") as f:
+        with open(fname, "r", encoding="utf-8") as f:
             read_file = f.readlines()
             gpxq[x.id] = read_file
-    return render_template(
-        "gpsdb/filez.html",
-        allfilez=query,
-        gpxq=gpxq,
-        form=form)
+    return render_template("gpsdb/filez.html", allfilez=query, gpxq=gpxq, form=form)
+
 
 @blueprint.route("/gnss/gpx/<string:gpx_rid>")
 def gpxtrace(gpx_rid):
@@ -223,8 +206,7 @@ def gpxtrace(gpx_rid):
         track_rid = gpx2geo(rid)
     else:
         track_rid = track.rid
-    return redirect(url_for('gpsdb.showtrack',
-                            track_rid=str(track_rid)))
+    return redirect(url_for("gpsdb.showtrack", track_rid=str(track_rid)))
 
 
 @blueprint.route("/gnss/tracks/<string:username>")
@@ -239,12 +221,9 @@ def usertracks(username):
         q1 = Trackz.query.filter_by(id=user_id, gpx_id=None).all()
         if q1:
             current_app.logger.debug(q1)
-            return render_template(
-                "gpsdb/alltracks,html",
-                username=username,
-            )
+            return render_template("gpsdb/alltracks,html", username=username)
         else:
-            return render_template('404.html'), 404
+            return render_template("404.html"), 404
 
 
 @blueprint.route("/gnss/show/<string:track_rid>")
@@ -266,15 +245,15 @@ def showtrack(track_rid):
                 r2 = Filez.query.filter_by(id=r1.gpx_id).first()
                 if r2:
                     if r2.is_private:
-                        return render_template('404.html'), 404
+                        return render_template("404.html"), 404
         else:
-            return render_template('404.html'), 404
+            return render_template("404.html"), 404
         return render_template(
             "gpsdb/showtrack.html",
             track_rid=track_rid,
             trackname=trackname,
             trackdesc=trackdesc,
-            username=userdb.username
+            username=userdb.username,
         )
 
 
@@ -293,7 +272,7 @@ def realtime(track_id):
                 "gpsdb/realtime.html",
                 track_id=track_id,
                 device=r1.device,
-                username=userdb.username
+                username=userdb.username,
             )
 
 
@@ -302,9 +281,7 @@ def geojson(track_rid):
     """Sends a GeoJSON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
-        response=faketrack,
-        status=200,
-        mimetype='application/json'
+        response=faketrack, status=200, mimetype="application/json"
     )
     # check if track_id was provided and is an int, else flask sends 404
     if isinstance(track_rid, str):
@@ -328,17 +305,21 @@ def geojson(track_rid):
         # sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
         #        FROM points WHERE points.track_id = {};'.format(track_id))
 
-        sql = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
-                   FROM points WHERE track_id = {}) as subq'.format(r1.id))
+        sql = text(
+            "SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
+                   FROM points WHERE track_id = {}) as subq".format(
+                r1.id
+            )
+        )
         result = db.session.execute(sql)
         trackjson = result.fetchone()  # TODO: maybe .fetchall() some day?
         current_app.logger.debug(trackjson)
-        data = '{"type":"FeatureCollection","features":[' + trackjson[0] + ']}'
+        data = '{"type":"FeatureCollection","features":[' + trackjson[0] + "]}"
         response = current_app.response_class(
             response=data,
             status=200,
-            mimetype='application/json',
-            headers={'Cache-Control':'no-store'}
+            mimetype="application/json",
+            headers={"Cache-Control": "no-store"},
         )
         db.session.close()
         return response
@@ -349,9 +330,7 @@ def geojsonr(jtype, track_rid):
     """Sends a GeoJON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
-        response=faketrack,
-        status=200,
-        mimetype='application/json'
+        response=faketrack, status=200, mimetype="application/json"
     )
     # check if track_id was provided and is an int, else flask sends 404
     if isinstance(track_rid, str) and isinstance(jtype, str):
@@ -370,10 +349,14 @@ def geojsonr(jtype, track_rid):
                 limit = "LIMIT 1"
             else:
                 limit = ""
-            q2 = text('SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT geom,\
+            q2 = text(
+                "SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT geom,\
                       id, timez, altitude, speed, bearing, sat, comment from \
                       points WHERE track_rid = {} ORDER BY timez DESC {}) \
-                      as subq'.format(r1.rid, limit))
+                      as subq".format(
+                    r1.rid, limit
+                )
+            )
             current_app.logger.debug(q2)
             result = db.session.execute(q2)
             trackjson = result.fetchall()
@@ -388,14 +371,12 @@ def geojsonr(jtype, track_rid):
                     for x in trackjson:
                         if z != 0:
                             y += ", "
-                        y += (x[0])
+                        y += x[0]
                         z += 1
-                data = '{"type":"FeatureCollection","features":[' + y + ']}'
+                data = '{"type":"FeatureCollection","features":[' + y + "]}"
                 current_app.logger.debug(y)
                 response = current_app.response_class(
-                    response=data,
-                    status=200,
-                    mimetype='application/json'
+                    response=data, status=200, mimetype="application/json"
                 )
                 return response
             else:
@@ -416,9 +397,7 @@ def geosvg(track_rid):
         <rect x="50" y="20" rx="20" ry="20" width="150" height="150" style="\
         fill:red;stroke:black;stroke-width:5;opacity:0.5" /></svg>'
     fakeresponse = current_app.response_class(
-        response=fakesvg,
-        status=200,
-        mimetype='image/svg+xml'
+        response=fakesvg, status=200, mimetype="image/svg+xml"
     )
     # check if track_id was provided and is an int, else flask sends 404
     if isinstance(track_rid, str):
@@ -432,17 +411,21 @@ def geosvg(track_rid):
         # here we ask for a specific track in plain SQL as it is simpler
 
         # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough - but it does not work as subq?
-        sql = text('SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
-                FROM points WHERE points.track_id = {};'.format(track_rid))
+        sql = text(
+            "SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
+                FROM points WHERE points.track_id = {};".format(
+                track_rid
+            )
+        )
         result = db.session.execute(sql)
         tracksvg = result.fetchone()  # TODO: maybe .fetchall() some day?
         current_app.logger.debug(tracksvg)
         data = '<svg xmlns="http://www.w3.org/2000/svg">\
-            <path d="{}" fill="cadetblue" /></svg>'.format(tracksvg[0])
+            <path d="{}" fill="cadetblue" /></svg>'.format(
+            tracksvg[0]
+        )
         response = current_app.response_class(
-            response=data,
-            status=200,
-            mimetype='image/svg+xml'
+            response=data, status=200, mimetype="image/svg+xml"
         )
         db.session.close()
         return response
@@ -455,36 +438,41 @@ def opengts():
     http://www.opengts.org/OpenGTS_Config.pdf
     http://www.geotelematic.com/docs/StatusCodes.pdf
     """
-    alt = request.args.get('alt')
-    apicode = request.args.get('acct')
-    code = request.args.get('code')
-    gprmc = request.args.get('gprmc')
-    device = request.args.get('id')
-    current_app.logger.debug('alt = {}'.format(alt))
-    current_app.logger.debug('id = {}'.format(apicode))
-    current_app.logger.debug('code = {}'.format(code))
-    current_app.logger.debug('device = {}'.format(device))
-    current_app.logger.debug('gprmc = {}'.format(gprmc))
+    alt = request.args.get("alt")
+    apicode = request.args.get("acct")
+    code = request.args.get("code")
+    gprmc = request.args.get("gprmc")
+    device = request.args.get("id")
+    current_app.logger.debug("alt = {}".format(alt))
+    current_app.logger.debug("id = {}".format(apicode))
+    current_app.logger.debug("code = {}".format(code))
+    current_app.logger.debug("device = {}".format(device))
+    current_app.logger.debug("gprmc = {}".format(gprmc))
 
     # parsing id to match GNSS Api
     haskey = ApiKey.query.filter_by(apikey=apicode).first()
     if haskey:
         user_id = haskey.user_id
-        current_app.logger.info("Found valid API code belonging to User ID = {}.".format(user_id))
+        current_app.logger.info(
+            "Found valid API code belonging to User ID = {}.".format(user_id)
+        )
     else:
-        current_app.logger.info("No user has such an API key = {}. Ignoring request then.".format(id))
-        return 'Hello?'
+        current_app.logger.info(
+            "No user has such an API key = {}. Ignoring request then.".format(id)
+        )
+        return "Hello?"
 
     # code 0xF020 means OpenGTS location reporting
     if code == "0xF020":
         # parsing NMEA-0183 $GPRMC record
         gpsdata = parse_rmc(gprmc)
-        current_app.logger.debug('parsed gprmc: {}'.format(gpsdata))
+        current_app.logger.debug("parsed gprmc: {}".format(gpsdata))
         # checking tracks database for the data and device
-        trackdb = Trackz.query.filter_by(trackdate=gpsdata['trackdate'],
-                                         device=device).first()
+        trackdb = Trackz.query.filter_by(
+            trackdate=gpsdata["trackdate"], device=device
+        ).first()
         if trackdb:
-            current_app.logger.debug('trackdb: {}'.format(trackdb))
+            current_app.logger.debug("trackdb: {}".format(trackdb))
         else:
             # we need to create a track
             trackdb = Trackz.create(
@@ -493,34 +481,33 @@ def opengts():
                 start=datetime.utcnow(),
                 description="LiveTracking",
                 device=device,
-                trackdate=gpsdata['trackdate'],
-                rid=uuid.uuid4()
+                trackdate=gpsdata["trackdate"],
+                rid=uuid.uuid4(),
             )
-            current_app.logger.debug('trackdb: {}'.format(trackdb))
+            current_app.logger.debug("trackdb: {}".format(trackdb))
         # we have track id, now we must check if the location was not already
         # submitted, as it looks like opengts often tries to resubmit the same
         # points over and over again.
         points = Pointz.query.filter_by(
             track_id=trackdb.id,
-            geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'],
-                                                 gpsdata['lat']),
-            timez=gpsdata['timez']
+            geom="SRID=4326;POINT({} {})".format(gpsdata["lon"], gpsdata["lat"]),
+            timez=gpsdata["timez"],
         ).first()
         if not points:
             # uff, now we can finally submit location
             points = Pointz.create(
                 track_id=trackdb.id,
-                geom='SRID=4326;POINT({} {})'.format(gpsdata['lon'], gpsdata['lat']),
+                geom="SRID=4326;POINT({} {})".format(gpsdata["lon"], gpsdata["lat"]),
                 altitude=alt,
-                timez=gpsdata['timez'],
-                speed=gpsdata['speed'],
-                bearing=gpsdata['bearing'],
+                timez=gpsdata["timez"],
+                speed=gpsdata["speed"],
+                bearing=gpsdata["bearing"],
                 comment="OpenGTS",
                 sat=None,
                 vdop=None,
                 pdop=None,
                 hdop=None,
-                provider="gps"
+                provider="gps",
             )
             # at the end we are updating the track table with current time
             current_app.logger.debug(points)
@@ -528,9 +515,9 @@ def opengts():
             db.session.commit
             db.session.close()
         else:
-            current_app.logger.debug('We already have that point recorded. Thank you.')
+            current_app.logger.debug("We already have that point recorded. Thank you.")
         #
-    return 'OK'
+    return "OK"
 
 
 @blueprint.route("/client/index.php", methods=["GET", "POST"])
@@ -538,7 +525,7 @@ def opengts():
 def uloggerlogin():
     """μlogger client compatibility."""
     current_app.logger.debug(request.get_data())
-    if request.method == 'POST':
+    if request.method == "POST":
         action = request.form["action"]
         if action == "auth":
             # username and password are the same at the moment
@@ -548,17 +535,23 @@ def uloggerlogin():
             haskey = ApiKey.query.filter_by(apikey=password).first()
             if haskey:
                 user_id = haskey.user_id
-                current_app.logger.info("Found valid API code belonging to User ID = {}.".format(user_id))
-                session['username'] = user_id
+                current_app.logger.info(
+                    "Found valid API code belonging to User ID = {}.".format(user_id)
+                )
+                session["username"] = user_id
                 # send a success to the app
                 return jsonify(error=False)
             else:
-                current_app.logger.info("No user has such an API key = {}. Ignoring request then.".format(id))
+                current_app.logger.info(
+                    "No user has such an API key = {}. Ignoring request then.".format(
+                        id
+                    )
+                )
                 # send error to the app as we do not have such a user
                 return jsonify(error=True, message="go away")
         elif action == "addtrack":
-            if 'username' in session:
-                username = session['username']
+            if "username" in session:
+                username = session["username"]
             else:
                 current_app.logger.info("Not logged in.")
                 return jsonify(error=True, message="go away")
@@ -571,13 +564,13 @@ def uloggerlogin():
                 description="LiveTracking",
                 device="μlogger",
                 trackdate=datetime.utcnow(),
-                rid=uuid.uuid4()
+                rid=uuid.uuid4(),
             )
-            current_app.logger.debug('trackdb: {}'.format(trackdb))
+            current_app.logger.debug("trackdb: {}".format(trackdb))
             return jsonify(error=False, trackid=trackdb.id)
         elif action == "addpos":
-            if 'username' in session:
-                username = session['username']
+            if "username" in session:
+                username = session["username"]
             else:
                 current_app.logger.info("Not logged in.")
                 return jsonify(error=True, message="go away")
@@ -606,14 +599,14 @@ def uloggerlogin():
             # points over and over again.
             points = Pointz.query.filter_by(
                 track_id=trackid,
-                geom='SRID=4326;POINT({} {})'.format(lon, lat),
-                timez=tstamp
+                geom="SRID=4326;POINT({} {})".format(lon, lat),
+                timez=tstamp,
             ).first()
             if not points:
                 # uff, now we can finally submit location
                 newpoint = Pointz.create(
                     track_id=trackid,
-                    geom='SRID=4326;POINT({} {})'.format(lon, lat),
+                    geom="SRID=4326;POINT({} {})".format(lon, lat),
                     altitude=alti,
                     timez=tstamp,
                     provider=provider,
@@ -623,17 +616,22 @@ def uloggerlogin():
                     hdop=0,
                     vdop=0,
                     pdop=0,
-                    sat=0
+                    sat=0,
                 )
                 if newpoint:
-                    current_app.logger.info('New point added: {}'.format(newpoint))
+                    current_app.logger.info("New point added: {}".format(newpoint))
                     return jsonify(error=False)
                 else:
-                    return jsonify(error=True, message="problemz with adding, check the server.")
+                    return jsonify(
+                        error=True, message="problemz with adding, check the server."
+                    )
             else:
-                current_app.logger.info('This point is already added, ignoring: {}'.format(points))
+                current_app.logger.info(
+                    "This point is already added, ignoring: {}".format(points)
+                )
                 return jsonify(error=False)
             db.session.commit
             db.session.close()
+
 
 # vim: tabstop=4 shiftwidth=4 expandtab

@@ -8,7 +8,7 @@
         </div>
         <div class="card-columns">
             {% for track in trackz|sort(attribute='id', reverse = True) %}
-            <div class="card">
+            <div class="card border-dark">
                 <div class="card-header">
                     <i class="fa fa-compass"></i> {{ track.id }} <span
                        class="pull-right badge badge-secondary">{{ track.trackdate }}</span>

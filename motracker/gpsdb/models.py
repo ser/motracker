@@ -22,7 +22,7 @@ class ApiKey(SurrogatePK, Model):
     __tablename__ = "apikey"
     apikey = Column(db.String(10), unique=True, nullable=False)
     user_id = reference_col("users", nullable=False)
-    user = relationship('User', cascade="all,delete", backref='apiusers')
+    user = relationship("User", cascade="all,delete", backref="apiusers")
 
     def __init__(self, apikey, **kwargs):
         """Create instance."""
@@ -38,27 +38,23 @@ class Filez(SurrogatePK, Model):
 
     __tablename__ = "files"
     user_id = reference_col("users", nullable=True)
-    user = relationship('User', cascade="all,delete", backref='fileusers')
-    when_uploaded = Column(db.DateTime(), nullable=False,
-                           default=datetime.utcnow)
+    user = relationship("User", cascade="all,delete", backref="fileusers")
+    when_uploaded = Column(db.DateTime(), nullable=False, default=datetime.utcnow)
     is_private = db.Column(db.Boolean, nullable=True)
     rid = db.Column(UUID(as_uuid=True), unique=True, nullable=False)
     description = db.Column(db.String, nullable=False)
 
     def __init__(self, is_private, description, rid, **kwargs):
         """Create instance."""
-        db.Model.__init__(self,
-                          is_private=is_private,
-                          description=description,
-                          rid=rid,
-                          **kwargs)
+        db.Model.__init__(
+            self, is_private=is_private, description=description, rid=rid, **kwargs
+        )
 
     def __repr__(self):
         """Represent instance as a unique string."""
-        return '<id: {}, desc: {}, when: {}>'.format(self.id,
-                                                     self.description,
-                                                     self.rid,
-                                                     self.when_uploaded)
+        return "<id: {}, desc: {}, when: {}>".format(
+            self.id, self.description, self.rid, self.when_uploaded
+        )
 
 
 class Trackz(SurrogatePK, Model):
@@ -69,7 +65,7 @@ class Trackz(SurrogatePK, Model):
     device = Column(db.String(255), unique=False, nullable=False)
     trackdate = Column(db.Date(), nullable=True)
     user_id = reference_col("users", nullable=True)
-    user = relationship('User', cascade="all,delete", backref='trackusers')
+    user = relationship("User", cascade="all,delete", backref="trackusers")
     start = Column(db.DateTime(), nullable=True)
     stop = Column(db.DateTime(), nullable=True)
     description = db.Column(db.String, nullable=True)
@@ -96,8 +92,12 @@ class Pointz(SurrogatePK, Model):
     __tablename__ = "points"
     timez = Column(db.DateTime(), nullable=False)
     track_id = reference_col("tracks", nullable=True)
-    track = relationship('Trackz', cascade="all,delete", backref='tracks')
-    geom = Column(Geometry('POINT', dimension=2, srid=4326, management=True), unique=False, nullable=True)
+    track = relationship("Trackz", cascade="all,delete", backref="tracks")
+    geom = Column(
+        Geometry("POINT", dimension=2, srid=4326, management=True),
+        unique=False,
+        nullable=True,
+    )
     altitude = Column(db.Float, unique=False, nullable=True)
     speed = Column(db.Float, unique=False, nullable=True)
     bearing = Column(db.Float, unique=False, nullable=True)
@@ -108,8 +108,21 @@ class Pointz(SurrogatePK, Model):
     provider = Column(db.String(100), unique=False, nullable=True)
     comment = Column(db.String(255), unique=False, nullable=True)
 
-    def __init__(self, timez, track_id, geom, altitude, speed, bearing,
-                 sat, hdop, vdop, pdop, provider, comment):
+    def __init__(
+        self,
+        timez,
+        track_id,
+        geom,
+        altitude,
+        speed,
+        bearing,
+        sat,
+        hdop,
+        vdop,
+        pdop,
+        provider,
+        comment,
+    ):
         """Create instance."""
         db.Model.__init__(
             self,
@@ -124,14 +137,14 @@ class Pointz(SurrogatePK, Model):
             pdop=pdop,
             sat=sat,
             provider=provider,
-            comment=comment
+            comment=comment,
         )
 
     def __repr__(self):
         """Represent instance as a unique string."""
-        return 'timez: {}, track_id: {}, geom: {}, altitude: {}, \
+        return "timez: {}, track_id: {}, geom: {}, altitude: {}, \
 speed: {}, bearing: {}, hdop: {}, vdop: {}, pdop: {}, sat: {}, \
-provider: {}, comment: {}'.format(
+provider: {}, comment: {}".format(
             self.timez,
             self.track_id,
             self.geom,
@@ -143,5 +156,5 @@ provider: {}, comment: {}'.format(
             self.pdop,
             self.sat,
             self.provider,
-            self.comment
+            self.comment,
         )

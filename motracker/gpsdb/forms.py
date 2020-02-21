@@ -13,7 +13,7 @@ class ApiForm(FlaskForm):
 
     confirm = BooleanField(
         "If you want to re-generate the key, select this checkbox to confirm",
-        validators=[InputRequired()]
+        validators=[InputRequired()],
     )
 
     def __init__(self, *args, **kwargs):
@@ -32,17 +32,12 @@ class ApiForm(FlaskForm):
 class AddFileForm(FlaskForm):
     """Add GPX file."""
 
-    description = StringField(
-        'GPX File Description',
-        validators=[DataRequired()]
-    )
-    is_private = BooleanField(
-        "Do you want to keep this file privately?"
-    )
+    description = StringField("GPX File Description", validators=[DataRequired()])
+    is_private = BooleanField("Do you want to keep this file privately?")
     upload_file = FileField(
-        'Chose File',
+        "Chose File",
         # validators=[FileRequired(), FileAllowed(filez, 'GPX tracks onlY!')]
-        validators=[FileRequired()]
+        validators=[FileRequired()],
     )
 
     def __init__(self, *args, **kwargs):

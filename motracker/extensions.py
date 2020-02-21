@@ -20,7 +20,9 @@ cache = Cache()
 csrf_protect = CSRFProtect()
 db = SQLAlchemy()
 debug_toolbar = DebugToolbarExtension()
-filez = UploadSet(name='filez', extensions=('gpx', 'GPX'), default_dest=lambda x: 'filez')
+filez = UploadSet(
+    name="filez", extensions=("gpx", "GPX"), default_dest=lambda x: "filez"
+)
 login_manager = LoginManager()
 migrate = Migrate()
 store = RedisStore(redis.StrictRedis())

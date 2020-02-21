@@ -30,7 +30,7 @@ def flash_errors(form, category="warning"):
 def gpx2geo(gpx_id):
     """Imports a GPX track into our database."""
     fname = current_app.config["UPLOADS_DEFAULT_DEST"] + str(gpx_id) + ".gpx"
-    gpx_file = open(fname, 'r', encoding="utf-8")
+    gpx_file = open(fname, "r", encoding="utf-8")
     gpx = gpxpy.parse(gpx_file)
     """  It behaves like that:
     gpxtxt = ""
@@ -52,7 +52,7 @@ def gpx2geo(gpx_id):
         description="Rendered file {}.gpx".format(gpx_id),
         start=datetime.utcnow(),
         gpx_id=gpx_id,
-        device=gpx.creator
+        device=gpx.creator,
     )
     # Create all points
     for track in gpx.tracks:
@@ -67,7 +67,9 @@ def gpx2geo(gpx_id):
                 Pointz.create(
                     track_id=newtrack.id,
                     provider=point.source,
-                    geom='SRID=4326;POINT({} {})'.format(point.longitude, point.latitude),
+                    geom="SRID=4326;POINT({} {})".format(
+                        point.longitude, point.latitude
+                    ),
                     altitude=point.elevation,
                     timez=point.time,
                     speed=speed,
@@ -76,10 +78,10 @@ def gpx2geo(gpx_id):
                     hdop=point.horizontal_dilution,
                     vdop=point.vertical_dilution,
                     pdop=point.position_dilution,
-                    comment=""
+                    comment="",
                 )
     # TODO add finished datetime.utcnow() to stop
-    return(newtrack.id)
+    return newtrack.id
 
 
 def track2svgline(track_id):
@@ -90,15 +92,22 @@ def track2svgline(track_id):
         return fakesvg
     else:
         # we cut results to 6 decimal places as it gives ~11cm accuracy which is enough
-        sql = text('SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
-                FROM points WHERE points.track_id = {};'.format(track_id))
+        sql = text(
+            "SELECT ST_AsSVG(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),1,6) \
+                FROM points WHERE points.track_id = {};".format(
+                track_id
+            )
+        )
         result = db.session.execute(sql)
         tracksvg = result.fetchone()
         current_app.logger.debug(tracksvg)
         data = '<svg xmlns="http://www.w3.org/2000/svg">\
-                <path d="{}" fill="cadetblue" /></svg>'.format(tracksvg[0])
+                <path d="{}" fill="cadetblue" /></svg>'.format(
+            tracksvg[0]
+        )
         db.session.close()
         return data
+
 
 def track2svgpoints(track_id):
     """Prepares an SVG overview built from a track."""
@@ -108,12 +117,16 @@ def track2svgpoints(track_id):
         return fakesvg
     else:
         data = '<svg xmlns="http://www.w3.org/2000/svg">'
-        sql = text('SELECT ST_AsSVG(geom) FROM points WHERE points.track_id = {};'.format(track_id))
+        sql = text(
+            "SELECT ST_AsSVG(geom) FROM points WHERE points.track_id = {};".format(
+                track_id
+            )
+        )
         result = db.session.execute(sql)
         tracksvg = result.fetchall()
         current_app.logger.debug(tracksvg)
         for x in tracksvg:
             data += '<circle {} r="0.0001" />'.format(x[0])
-        data += '</svg>'
+        data += "</svg>"
         current_app.logger.debug(data)
         return data
