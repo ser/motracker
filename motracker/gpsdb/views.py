@@ -299,7 +299,7 @@ def realtime(track_id):
 
 @blueprint.route("/gnss/json/<string:track_rid>")
 def geojson(track_rid):
-    """Sends a GeoJON built from a track."""
+    """Sends a GeoJSON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
         response=faketrack,
@@ -337,7 +337,8 @@ def geojson(track_rid):
         response = current_app.response_class(
             response=data,
             status=200,
-            mimetype='application/json'
+            mimetype='application/json',
+            headers={'Cache-Control':'no-store'}
         )
         db.session.close()
         return response
