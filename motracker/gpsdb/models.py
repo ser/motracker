@@ -22,7 +22,7 @@ class ApiKey(SurrogatePK, Model):
     __tablename__ = "apikey"
     apikey = Column(db.String(10), unique=True, nullable=False)
     user_id = reference_col("users", nullable=False)
-    user = relationship("User", cascade="all,delete", backref="apiusers")
+    #$user = relationship("User", cascade="all,delete", backref="apiusers")
 
     def __init__(self, apikey, **kwargs):
         """Create instance."""

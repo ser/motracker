@@ -63,30 +63,42 @@ def parse_rmc(gprmc):
 blueprint = Blueprint("gpsdb", __name__, url_prefix="", static_folder="../static")
 
 
-@blueprint.route("/gnss/apikey", methods=["GET", "POST"])
+@blueprint.route("/apikeys", methods=["GET", "POST"])
 @login_required
 def gpsapi():
     """(re)Generate and/or present API key."""
     form = ApiForm(request.form)
-    hasapi = ApiKey.query.filter_by(user_id=current_user.get_id()).first()
+    hasapi = ApiKey.query.filter_by(user_id=current_user.get_id()).all()
     # Handle regeneration of API key
     if request.method == "POST":
         if form.validate_on_submit():
             apikey = strgen.StringGenerator("[\w\d]{10}").render()
-            hasapi.apikey = apikey
+            ApiKey.create(user_id=current_user.get_id(), apikey=apikey)
             db.session.commit()
-            db.session.close()
-            current_app.logger.info("API key has been changed.")
-            flash("API key has been changed.", "info")
+            #db.session.close()
+            current_app.logger.info("API key has been added.")
+            flash("API key {} has been added.".format(apikey), "info")
+            return redirect(url_for("gpsdb.gpsapi"))
         else:
             flash_errors(form)
     # No regeneration request
     if hasapi:
-        apikey = hasapi.apikey
-    else:
-        apikey = strgen.StringGenerator("[\w\d]{10}").render()
-        ApiKey.create(user_id=current_user.get_id(), apikey=apikey)
-    return render_template("gpsdb/apikey.html", form=form, apikey=apikey)
+        apikey = []
+        for x in hasapi:
+            apikey.append(x.apikey)
+    return render_template("gpsdb/apikey.html", form=form, apikeys=apikey)
+
+
+@blueprint.route("/apikeys/rm/<string:api>", methods=["GET"])
+@login_required
+def rmapi(api):
+    """RM api key. Everyone logged can remove a key if known."""
+    hasapi = ApiKey.query.filter_by(apikey=api).first()
+    print(hasapi.apikey)
+    db.session.delete(hasapi)
+    db.session.commit()
+    flash("API key {} has been removed.".format(hasapi.apikey), "warning")
+    return redirect(url_for("gpsdb.gpsapi"))
 
 
 @blueprint.route("/gnss/files", methods=["GET", "POST"])

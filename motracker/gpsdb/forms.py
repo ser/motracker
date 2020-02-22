@@ -12,7 +12,7 @@ class ApiForm(FlaskForm):
     """Change API key form."""
 
     confirm = BooleanField(
-        "If you want to re-generate the key, select this checkbox to confirm",
+        "If you want to generate a new key, please select this checkbox to confirm",
         validators=[InputRequired()],
     )
 

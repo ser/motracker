@@ -1,10 +1,20 @@
 
 {% extends "layout.html" %}
-{% block page_title %}Your personal API key / moTracker{% endblock %}
+{% block page_title %}Your personal API key(s) / moT{% endblock %}
 {% block content %}
     <div class="container">
         <h1>{{ current_user.username }},</h1>
-        <h3>this is your secret and unique API key: <kbd>{{ apikey }}</kbd></h3>
+        <h3>your secret and unique API key(s):</h3>
+        <div class="card-columns">
+            {% for apikey in apikeys %}
+            <div class="card border-primary mb-3" style="max-width: 20rem;">
+                <div class="card-body">
+             {{ apikey }}
+                </div>
+                <div class="card-footer pull-right badge-pill badge-danger badge"><a href={{ url_for('gpsdb.rmapi', api=apikey) }}>remove forever</a></div>
+            </div>
+            {% endfor %}
+            </div>
         <br/>
         <form id="ApiForm" class="form form-api" method="POST" action="" role="form">
             {{ form.csrf_token }}
@@ -12,7 +22,7 @@
                 {{ form.confirm.label }}
                 {{ form.confirm }}
             </div>
-            <p><input class="btn btn-primary" type="submit" value="Change API key"></p>
+            <p><input class="btn btn-primary" type="submit" value="Generate and add a new API key"></p>
         </form>
     </div>
 {% endblock %}

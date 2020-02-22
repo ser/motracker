@@ -16,10 +16,12 @@ TEST_PATH = os.path.join(PROJECT_ROOT, "tests")
 
 
 @click.command()
-@click.option("-ma", "--makeadmin", default=None, help="Set username as admin")
-@click.option("-ra", "--removeadmin", default=None, help="remove username as admin")
+@click.option("-ma", "--makeadmin", default=None, type=str, help="Set username as admin")
+@click.option("-ra", "--removeadmin", default=None, type=str, help="remove username as admin")
+@click.option("-sn", "--setname", nargs=2, default=None, type=str, help="setname")
+@click.option("-ss", "--setsurname", nargs=2, default=None, type=str, help="setname")
 @with_appcontext
-def users(makeadmin, removeadmin):
+def users(makeadmin, removeadmin, setname, setsurname):
     """Sets user actions."""
     if makeadmin:
         sql = "SELECT * FROM users WHERE username='{}'".format(makeadmin)
@@ -29,10 +31,9 @@ def users(makeadmin, removeadmin):
             sql = "UPDATE users SET is_admin=True WHERE username='{}'".format(makeadmin)
             result = db.session.execute(sql)
             db.session.commit()
-            print("{} set correctly as admin.".format(makeadmin))
+            click.echo("{} set correctly as admin.".format(makeadmin))
         else:
-            print("is already an admin or does not exist")
-        db.session.close()
+            click.echo("is already an admin or does not exist")
     if removeadmin:
         sql = "SELECT * FROM users WHERE username='{}'".format(removeadmin)
         result = db.session.execute(sql)
@@ -41,10 +42,33 @@ def users(makeadmin, removeadmin):
             sql = "UPDATE users SET is_admin=False WHERE username='{}'".format(removeadmin)
             result = db.session.execute(sql)
             db.session.commit()
-            print("{} correctly removed admin rights.".format(removeadmin))
+            click.echo("{} correctly removed admin rights.".format(removeadmin))
         else:
-            print("is not already an admin or does not exist")
-        db.session.close()
+            click.echo("is not already an admin or does not exist")
+    if setname:
+        sql = "SELECT * FROM users WHERE username='{}'".format(setname[0])
+        result = db.session.execute(sql)
+        onerow = result.fetchone()
+        if onerow.username:
+            sql = "UPDATE users SET first_name='{}' WHERE username='{}'".format(setname[1], setname[0])
+            result = db.session.execute(sql)
+            db.session.commit()
+            click.echo("{} is now {}".format(setname[0], setname[1]))
+        else:
+            click.echo("I can't understand this: {}".format(setname))
+    if setsurname:
+        sql = "SELECT * FROM users WHERE username='{}'".format(setsurname[0])
+        result = db.session.execute(sql)
+        onerow = result.fetchone()
+        if onerow.username:
+            sql = "UPDATE users SET last_name='{}' WHERE username='{}'".format(setsurname[1], setsurname[0])
+            result = db.session.execute(sql)
+            db.session.commit()
+            click.echo("{} is now {}".format(setsurname[0], setsurname[1]))
+        else:
+            click.echo("I can't understand this: {}".format(setsurname))
+    db.session.close()
+
 
 @click.command()
 def test():
