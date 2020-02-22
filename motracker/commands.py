@@ -1,14 +1,41 @@
 # -*- coding: utf-8 -*-
 """Click commands."""
+import click
 import os
+from flask import current_app
+from flask.cli import with_appcontext
 from glob import glob
 from subprocess import call
 
-import click
+#from motracker.app import create_app
+from motracker.extensions import db
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.join(HERE, os.pardir)
 TEST_PATH = os.path.join(PROJECT_ROOT, "tests")
+
+
+@click.command()
+@click.option(
+    "-ma",
+    "--makeadmin",
+    default=None,
+    help="Set username as admin",
+)
+@with_appcontext
+def users(makeadmin):
+    """Sets user actions."""
+    sql = "SELECT * FROM users WHERE username='{}'".format(makeadmin)
+    result = db.session.execute(sql)
+    onerow = result.fetchone()
+    if onerow.username and onerow.is_admin is not True:
+        sql = "UPDATE users SET is_admin=True WHERE username='{}'".format(makeadmin)
+        result = db.session.execute(sql)
+        db.session.commit()
+        print("{} set correctly as admin.".format(makeadmin))
+    else:
+        print("is already an admin or does not exist")
+    db.session.close()
 
 
 @click.command()
