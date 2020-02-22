@@ -56,6 +56,16 @@ To deploy::
 In your production environment, make sure the ``FLASK_DEBUG`` environment
 variable is unset or is set to ``0``.
 
+Setting admin user
+------------------
+
+After creation a user via web, you can set that username as admin ::
+
+    flask users --makeadmin username
+
+If you want to unset admin rights ::
+
+    flask users --removeadmin username
 
 Shell
 -----
@@ -94,35 +104,6 @@ This will generate a new migration script. Then run ::
 To apply the migration.
 
 For a full migration command reference, run ``flask db --help``.
-
-
-Docker
-------
-
-This app can be run completely using ``Docker`` and ``docker-compose``. Before starting, make sure to create a new copy of ``.env.example`` called ``.env``. You will need to start the development version of the app at least once before running other Docker commands, as starting the dev app bootstraps a necessary file, ``webpack/manifest.json``.
-
-There are three main services:
-
-To run the development version of the app ::
-
-    docker-compose up flask-dev
-
-To run the production version of the app ::
-
-    docker-compose up flask-prod
-
-The list of ``environment:`` variables in the ``docker-compose.yml`` file takes precedence over any variables specified in ``.env``.
-
-To run any commands using the ``Flask CLI`` ::
-
-    docker-compose run --rm manage <<COMMAND>>
-
-Therefore, to initialize a database you would run ::
-
-    docker-compose run --rm manage db init
-
-A docker volume ``node-modules`` is created to store NPM packages and is reused across the dev and prod versions of the application. For the purposes of DB testing with ``sqlite``, the file ``dev.db`` is mounted to all containers. This volume mount should be removed from ``docker-compose.yml`` if a production DB server is used.
-
 
 Asset Management
 ----------------
