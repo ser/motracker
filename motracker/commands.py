@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 """Click commands."""
-import click
 import os
-from flask import current_app
-from flask.cli import with_appcontext
 from glob import glob
 from subprocess import call
 
-#from motracker.app import create_app
+import click
+from flask.cli import with_appcontext
+
+# from motracker.app import create_app
 from motracker.extensions import db
 
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -16,27 +16,35 @@ TEST_PATH = os.path.join(PROJECT_ROOT, "tests")
 
 
 @click.command()
-@click.option(
-    "-ma",
-    "--makeadmin",
-    default=None,
-    help="Set username as admin",
-)
+@click.option("-ma", "--makeadmin", default=None, help="Set username as admin")
+@click.option("-ra", "--removeadmin", default=None, help="remove username as admin")
 @with_appcontext
-def users(makeadmin):
+def users(makeadmin, removeadmin):
     """Sets user actions."""
-    sql = "SELECT * FROM users WHERE username='{}'".format(makeadmin)
-    result = db.session.execute(sql)
-    onerow = result.fetchone()
-    if onerow.username and onerow.is_admin is not True:
-        sql = "UPDATE users SET is_admin=True WHERE username='{}'".format(makeadmin)
+    if makeadmin:
+        sql = "SELECT * FROM users WHERE username='{}'".format(makeadmin)
         result = db.session.execute(sql)
-        db.session.commit()
-        print("{} set correctly as admin.".format(makeadmin))
-    else:
-        print("is already an admin or does not exist")
-    db.session.close()
-
+        onerow = result.fetchone()
+        if onerow.username and onerow.is_admin is not True:
+            sql = "UPDATE users SET is_admin=True WHERE username='{}'".format(makeadmin)
+            result = db.session.execute(sql)
+            db.session.commit()
+            print("{} set correctly as admin.".format(makeadmin))
+        else:
+            print("is already an admin or does not exist")
+        db.session.close()
+    if removeadmin:
+        sql = "SELECT * FROM users WHERE username='{}'".format(removeadmin)
+        result = db.session.execute(sql)
+        onerow = result.fetchone()
+        if onerow.username and onerow.is_admin is True:
+            sql = "UPDATE users SET is_admin=False WHERE username='{}'".format(removeadmin)
+            result = db.session.execute(sql)
+            db.session.commit()
+            print("{} correctly removed admin rights.".format(removeadmin))
+        else:
+            print("is not already an admin or does not exist")
+        db.session.close()
 
 @click.command()
 def test():
