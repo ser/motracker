@@ -75,17 +75,17 @@ def gpsapi():
             apikey = strgen.StringGenerator("[\w\d]{10}").render()
             ApiKey.create(user_id=current_user.get_id(), apikey=apikey)
             db.session.commit()
-            #db.session.close()
             current_app.logger.info("API key has been added.")
             flash("API key {} has been added.".format(apikey), "info")
             return redirect(url_for("gpsdb.gpsapi"))
         else:
             flash_errors(form)
     # No regeneration request
+    apikey = []
     if hasapi:
-        apikey = []
         for x in hasapi:
             apikey.append(x.apikey)
+    db.session.close()
     return render_template("gpsdb/apikey.html", form=form, apikeys=apikey)
 
 
@@ -93,7 +93,7 @@ def gpsapi():
 @login_required
 def rmapi(api):
     """RM api key. Everyone logged can remove a key if known."""
-    hasapi = ApiKey.query.filter_by(apikey=api).first()
+    hasapi = ApiKey.query.filter_by(apikey=api).first_or_404(description='There is no data with api key {}'.format(api))
     print(hasapi.apikey)
     db.session.delete(hasapi)
     db.session.commit()

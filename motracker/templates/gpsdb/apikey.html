@@ -9,7 +9,7 @@
             {% for apikey in apikeys %}
             <div class="card border-primary mb-3" style="max-width: 20rem;">
                 <div class="card-body">
-             {{ apikey }}
+                    <h4 class="card-title">{{ apikey }}</h4>
                 </div>
                 <div class="card-footer pull-right badge-pill badge-danger badge"><a href={{ url_for('gpsdb.rmapi', api=apikey) }}>remove forever</a></div>
             </div>
