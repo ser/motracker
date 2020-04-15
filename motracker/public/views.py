@@ -11,11 +11,14 @@ from flask import (
 )
 from flask_login import login_required, login_user, logout_user
 
-from motracker.extensions import login_manager
+from motracker.extensions import login_manager, ws
 from motracker.public.forms import LoginForm
 from motracker.user.forms import RegisterForm
 from motracker.user.models import User
 from motracker.utils import flash_errors
+
+import redis
+import time
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
@@ -75,3 +78,20 @@ def about():
     """About page."""
     form = LoginForm(request.form)
     return render_template("public/about.html", form=form)
+
+@ws.route('/rt/<string:track_id>')
+def echo(ws, track_id):
+    """Websockets serving tracks."""
+    reddy = redis.Redis(host='localhost', port=6379, db=3)
+    subs = reddy.pubsub()
+    subs.subscribe("{}".format(track_id))
+    while True:
+        t_end = time.time() + 29
+        while time.time() < t_end:
+            msg = subs.get_message()
+            if msg:
+                print("received from redis: {}".format(msg))
+                ws.send("UP")
+            else:
+                time.sleep(0.01)
+        ws.send("WS PING")

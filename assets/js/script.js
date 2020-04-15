@@ -1,6 +1,30 @@
 // <3 Maps are in templates
 
     function initrealtime() {
+
+            if (!window.WebSocket) {
+                if (window.MozWebSocket) {
+                    window.WebSocket = window.MozWebSocket;
+                } else {
+                    console.log("Your browser doesn't support WebSockets.");
+                }
+            }
+
+            var ws = new WebSocket('wss://motracker.random.re/rt/' + trackrid);
+
+            ws.onopen = function(evt) {
+                console.log('WebSocket connection opened.');
+            }
+
+            ws.onmessage = function(evt) {
+                console.log(evt.data);
+                if (evt.data == "UP") { realtime.update(); }
+            }
+
+            ws.onclose = function(evt) {
+                console.log('WebSocket connection closed.');
+            }
+
         //// Markers
         // Moto
         L.Marker.mergeOptions({
@@ -14,8 +38,8 @@
 
         // loading geoJSON
         var map = L.map('gnssmap'),
-            realtime = L.realtime(`/gnss/jsonp/one/${trackrid}`, {
-                interval: 30 * 1000
+            realtime = L.realtime(`/gnss/jsonp/1/${trackrid}`, {
+                start: false
         }).addTo(map);
 
         // https://opentopomap.org/

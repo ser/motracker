@@ -2,12 +2,13 @@
 """Gpsdb views."""
 
 import json
-import uuid
-from datetime import datetime
 
 import gpxpy
 import pynmea2
+import redis
 import strgen
+import uuid
+from datetime import datetime, date
 from flask import (
     Blueprint,
     current_app,
@@ -32,6 +33,7 @@ from .models import ApiKey, Filez, Pointz, Trackz
 
 # SUPPORT FUNCTIONS and CONSTANTS
 # -------------------------------
+
 
 # fake track as default response
 faketrack = '{"type":"FeatureCollection","features":[{"type":"Feature","geometry":{"type":\
@@ -269,20 +271,21 @@ def showtrack(track_rid):
         )
 
 
-@blueprint.route("/gnss/realtime/<int:track_id>")
-def realtime(track_id):
+@blueprint.route("/gnss/realtime/<string:track_rid>")
+def realtime(track_rid):
     """Shows realtime position for a track."""
     # TODO: add possibility for a user to hide (s)hes realtime location.
     # check if username was provided and is valid, else flask sends 404.
-    if isinstance(track_id, int):
+    if isinstance(track_rid, str):
+        rid = uuid.UUID(track_rid)
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_id).first_or_404()
+        r1 = Trackz.query.filter_by(rid=rid).first_or_404()
         if r1:
             # check track for username
             userdb = User.query.filter_by(id=r1.user_id).first_or_404()
             return render_template(
                 "gpsdb/realtime.html",
-                track_id=track_id,
+                track_rid=track_rid,
                 device=r1.device,
                 username=userdb.username,
             )
@@ -295,7 +298,7 @@ def geojson(track_rid):
     fakeresponse = current_app.response_class(
         response=faketrack, status=200, mimetype="application/json"
     )
-    # check if track_id was provided and is an int, else flask sends 404
+    # check if track_id was provided and is a string, else flask sends 404
     if isinstance(track_rid, str):
         rid = uuid.UUID(track_rid)
         # check if track exist
@@ -337,17 +340,18 @@ def geojson(track_rid):
         return response
 
 
-@blueprint.route("/gnss/jsonp/<string:jtype>/<string:track_rid>")
+@blueprint.route("/gnss/jsonp/<int:jtype>/<string:track_rid>")
 def geojsonr(jtype, track_rid):
-    """Sends a GeoJON built from a track."""
+    """Sends a GeoJSON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
         response=faketrack, status=200, mimetype="application/json"
     )
-    # check if track_id was provided and is an int, else flask sends 404
-    if isinstance(track_rid, str) and isinstance(jtype, str):
+    # check if track_rid was provided and is an string, else flask sends 404
+    if isinstance(track_rid, str) and isinstance(jtype, int):
         # check if track exist
-        r1 = Trackz.query.filter_by(id=track_rid).first()
+        rid = uuid.UUID(track_rid)
+        r1 = Trackz.query.filter_by(rid=rid).first()
         if r1:
             # check if track was rendered from a GPX, it is not realtime
             if r1.gpx_id:
@@ -357,16 +361,16 @@ def geojsonr(jtype, track_rid):
             # q2 = Pointz.query.filter_by(track_id=q1.id).order_by(Pointz.timez.desc()).first()
             # q2 = text('SELECT ST_AsGeoJSON(points.geom ORDER BY points.timez DESC,6) \
             #           FROM points WHERE points.track_id = {}'.format(r1.id))
-            if jtype == "one":
-                limit = "LIMIT 1"
+            if jtype > 0 and jtype < 100:
+                limit = "LIMIT {}".format(jtype)
             else:
-                limit = ""
+                limit = "LIMIT 1"
             q2 = text(
                 "SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT geom,\
                       id, timez, altitude, speed, bearing, sat, comment from \
-                      points WHERE track_rid = {} ORDER BY timez DESC {}) \
+                      points WHERE track_id = '{}' ORDER BY timez DESC {}) \
                       as subq".format(
-                    r1.rid, limit
+                    r1.id, limit
                 )
             )
             current_app.logger.debug(q2)
@@ -645,5 +649,135 @@ def uloggerlogin():
             db.session.commit
             db.session.close()
 
+
+@blueprint.route("/mkr")
+@csrf_protect.exempt
+def mkr():
+    """Receives data from Arduino receiver device, which is my another project.
+    """
+    # mandatory values
+    apicode = request.args.get("apikey")
+    device = request.args.get("id")
+
+    # src has two possible values: gps & gsm
+    src = request.args.get("src")
+
+    # Building datetime from URI
+    gps_day = request.args.get("da")
+    gps_month = request.args.get("mo")
+    gps_year = request.args.get("ye")
+    gps_minute = request.args.get("mi")
+    gps_hour = request.args.get("ho")
+    gps_second = request.args.get("se")
+    gps_datetime_string = "{}-{}-{} {}:{}:{}".format(gps_day, gps_month, gps_year, gps_hour, gps_minute, gps_second)
+    gps_datetime = datetime.strptime(gps_datetime_string, "%d-%m-%y %H:%M:%S")
+    gps_date = date(int(gps_year), int(gps_month), int(gps_day))
+
+    if src == 'gps':
+        lat = float(request.args.get("lat"))/10000000
+        lon = float(request.args.get("lon"))/10000000
+    else:
+        lat = float(request.args.get("lat"))
+        lon = float(request.args.get("lon"))
+
+    # optional values:
+    if request.args.get("he"):
+        gps_head = request.args.get("he")
+        if gps_head == "999999.000000":
+            gps_head = None
+    else:
+        gps_head = None
+
+    if request.args.get("alt"):
+        gps_alt = request.args.get("alt")
+    else:
+        gps_alt = None
+
+    if request.args.get("sp"):
+        gps_speed = request.args.get("sp")
+    else: 
+        gps_speed = None
+
+    current_app.logger.debug("date = {}".format(gps_datetime))
+
+    if request.args.get("sat"):
+        gps_sat = request.args.get("sat")
+    else:
+        gps_sat = None
+
+    # parsing id to match GNSS Api
+    haskey = ApiKey.query.filter_by(apikey=apicode).first()
+    if haskey:
+        user_id = haskey.user_id
+        current_app.logger.info(
+            "Found valid API code belonging to User ID = {}.".format(user_id)
+        )
+    else:
+        current_app.logger.info(
+            "No user has such an API key = {}. Ignoring request then.".format(id)
+        )
+        return "Hello?"
+
+    # checking tracks database for the data and device
+    trackdb = Trackz.query.filter_by(
+        trackdate=gps_date, device=device
+    ).first()
+    if trackdb:
+        current_app.logger.debug("trackdb: {}".format(trackdb))
+    else:
+        # we need to create a track
+        trackdb = Trackz.create(
+            name="Arduino",
+            user_id=user_id,
+            start=datetime.utcnow(),
+            description="LiveTracking",
+            device=device,
+            trackdate=gps_date,
+            rid=uuid.uuid4(),
+        )
+    #current_app.logger.debug("trackdb: {}".format(trackdb))
+
+    # we have track id, now we must check if the location was not already
+    # submitted, as it looks like opengts often tries to resubmit the same
+    # points over and over again.
+    points = Pointz.query.filter_by(
+        track_id=trackdb.id,
+        geom="SRID=4326;POINT({} {})".format(lon, lat),
+        timez=gps_datetime,
+    ).first()
+    if not points:
+        # uff, now we can finally submit location
+        points = Pointz.create(
+            track_id=trackdb.id,
+            geom="SRID=4326;POINT({} {})".format(lon, lat),
+            altitude=gps_alt,
+            timez=gps_datetime,
+            speed=gps_speed,
+            bearing=gps_head,
+            comment=device,
+            sat=gps_sat,
+            vdop=None,
+            pdop=None,
+            hdop=None,
+            provider=src
+        )
+        # at the end we are updating the track table with current time
+        current_app.logger.debug(points)
+        trackdb.stop = datetime.utcnow()
+
+        # send pubsub to redis channel
+        reddy = redis.Redis(host='localhost', port=6379, db=3)
+        r = reddy.publish("{}".format(trackdb.rid), 'UP')
+        current_app.logger.debug("redis publish on {}: {}".format(trackdb.rid, r))
+
+        # closing db access
+        db.session.commit
+        db.session.close()
+
+    else:
+        current_app.logger.debug("We already have that point recorded. Thank you.")
+
+    # we are done.
+    return "OK"
 
 # vim: tabstop=4 shiftwidth=4 expandtab

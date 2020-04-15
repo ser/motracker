@@ -1,8 +1,8 @@
 # Everything needed in production
 
 # Flask
-Flask>=1.0.2
-Werkzeug>=0.14.1
+Flask>=1.1.2
+Werkzeug>=1.0.1
 click>=5.0
 
 # Database
@@ -32,7 +32,7 @@ Flask-Login>=0.4.1
 Flask-Bcrypt>=0.7.1
 
 # Caching
-Flask-Caching>=1.0.0
+#Flask-Caching>=1.0.0
 
 # Debug toolbar
 Flask-DebugToolbar>=0.10.1
@@ -46,6 +46,10 @@ StringGenerator
 # Offline jobs
 redis>=3.3.5
 celery>=4.3.0
+
+# Websockets
+#flask-socketio
+flask-uwsgi-websocket
 
 # Various GNSS libraries
 pynmea2>=1.15.0

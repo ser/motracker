@@ -9,6 +9,7 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_uploads import UploadSet
+from flask_uwsgi_websocket import WebSocket
 from flask_webpack import Webpack
 from flask_wtf.csrf import CSRFProtect
 from simplekv.memory.redisstore import RedisStore
@@ -27,6 +28,7 @@ login_manager = LoginManager()
 migrate = Migrate()
 store = RedisStore(redis.StrictRedis())
 webpack = Webpack()
+ws = WebSocket()
 
 # with current_app.app_context():
 #    celery = Celery(current_app.name, broker=current_app.config['CELERY_BROKER_URL'])

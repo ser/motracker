@@ -5,8 +5,11 @@ import sys
 
 from flask import Flask, render_template
 from flask_kvsession import KVSessionExtension
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
 from flask_uploads import configure_uploads, patch_request_class
 from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.debug import DebuggedApplication
 
 from motracker import commands, gpsdb, public, user
 from motracker.extensions import (
@@ -18,6 +21,7 @@ from motracker.extensions import (
     filez,
     login_manager,
     migrate,
+    ws,
     store,
     webpack,
 )
@@ -44,6 +48,8 @@ def register_configuration(app):
     configure_uploads(app, filez)
     patch_request_class(app, size=25000000)
     app.wsgi_app = ProxyFix(app.wsgi_app)
+    app.debug = True
+    app.wsgi_app = DebuggedApplication(app.wsgi_app, True)
 
 
 def register_extensions(app):
@@ -57,6 +63,7 @@ def register_extensions(app):
     migrate.init_app(app, db)
     webpack.init_app(app)
     KVSessionExtension(store, app)
+    ws.init_app(app)
     return None
 
 
