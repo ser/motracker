@@ -63,3 +63,4 @@ env/
 
 # until we finish 1.0
 /migrations
+motracker/static

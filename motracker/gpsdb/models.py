@@ -33,20 +33,20 @@ class ApiKey(SurrogatePK, Model):
         return "<ApiKey({apikey})>".format(apikey=self.apikey)
 
 
-class SMS(SurrogatePK, Model):
-    """SMS (optional, not documented!)."""
-
-    __tablename__ = "sms"
-    number = Column(db.String(20), unique=False, nullable=False)
-    sms = db.Column(db.String, unique=False, nullable=False)
-
-    def __init__(self, number, sms, **kwargs):
-        """Create instance."""
-        db.Model.__init__(self, number=number, sms=sms, **kwargs)
-
-    def __repr__(self):
-        """Represent instance as a unique string."""
-        return "<Number: {}, sms: {}".format(self.number, self.sms)
+# class SMS(SurrogatePK, Model):
+#    """SMS (optional, not documented!)."""
+#
+#    __tablename__ = "sms"
+#    number = Column(db.String(20), unique=False, nullable=False)
+#    sms = db.Column(db.String, unique=False, nullable=False)
+#
+#    def __init__(self, number, sms, **kwargs):
+#        """Create instance."""
+#        db.Model.__init__(self, number=number, sms=sms, **kwargs)
+#
+#    def __repr__(self):
+#        """Represent instance as a unique string."""
+#        return "<Number: {}, sms: {}".format(self.number, self.sms)
 
 
 class Filez(SurrogatePK, Model):
