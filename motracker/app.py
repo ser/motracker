@@ -8,7 +8,8 @@ from flask_kvsession import KVSessionExtension
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 from flask_uploads import configure_uploads, patch_request_class
-from werkzeug.contrib.fixers import ProxyFix
+#from werkzeug.contrib.fixers import ProxyFix
+from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.debug import DebuggedApplication
 
 from motracker import commands, gpsdb, public, user
@@ -20,6 +21,7 @@ from motracker.extensions import (
     debug_toolbar,
     filez,
     login_manager,
+    mail,
     migrate,
     ws,
     store,
@@ -60,6 +62,7 @@ def register_extensions(app):
     csrf_protect.init_app(app)
     login_manager.init_app(app)
     debug_toolbar.init_app(app)
+    mail.init_app(app)
     migrate.init_app(app, db)
     webpack.init_app(app)
     KVSessionExtension(store, app)

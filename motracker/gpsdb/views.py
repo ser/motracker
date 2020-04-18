@@ -21,10 +21,11 @@ from flask import (
     url_for,
 )
 from flask_login import current_user, login_required
+from flask_mail import Message
 from sqlalchemy import text
 
 # from motracker.extensions import celery, db, filez
-from motracker.extensions import csrf_protect, db
+from motracker.extensions import csrf_protect, db, mail
 from motracker.user.models import User
 from motracker.utils import flash_errors, gpx2geo
 
@@ -698,7 +699,7 @@ def mkr():
     else: 
         gps_speed = None
 
-    current_app.logger.debug("date = {}".format(gps_datetime))
+    # current_app.logger.debug("date = {}".format(gps_datetime))
 
     if request.args.get("sat"):
         gps_sat = request.args.get("sat")
@@ -709,9 +710,9 @@ def mkr():
     haskey = ApiKey.query.filter_by(apikey=apicode).first()
     if haskey:
         user_id = haskey.user_id
-        current_app.logger.info(
-            "Found valid API code belonging to User ID = {}.".format(user_id)
-        )
+        # current_app.logger.debug(
+        #    "Found valid API code belonging to User ID = {}.".format(user_id)
+        # )
     else:
         current_app.logger.info(
             "No user has such an API key = {}. Ignoring request then.".format(id)
@@ -723,7 +724,8 @@ def mkr():
         trackdate=gps_date, device=device
     ).first()
     if trackdb:
-        current_app.logger.debug("trackdb: {}".format(trackdb))
+        # current_app.logger.debug("trackdb: {}".format(trackdb))
+        pass
     else:
         # we need to create a track
         trackdb = Trackz.create(
@@ -778,6 +780,24 @@ def mkr():
         current_app.logger.debug("We already have that point recorded. Thank you.")
 
     # we are done.
+    return "OK"
+
+
+@blueprint.route("/sms", methods=["POST"])
+@csrf_protect.exempt
+def smstext():
+    """sms handling, we want to forward all text messagess to email."""
+    data = json.loads(request.data)
+    current_app.logger.debug(data)
+
+    msg = Message(
+            "Arduino SMS from {}".format(data['number']),
+            sender='motracker@random.re',
+            )
+    msg.add_recipient("motracker@random.re")
+    msg.body = "{}".format(data['text'])
+    mail.send(msg)
+
     return "OK"
 
 # vim: tabstop=4 shiftwidth=4 expandtab
