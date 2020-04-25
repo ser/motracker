@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """Gpsdb views."""
 
-import json
-
+import binascii
 import gpxpy
+import json
 import pynmea2
+import re
 import redis
 import strgen
 import uuid
@@ -790,12 +791,22 @@ def smstext():
     data = json.loads(request.data)
     current_app.logger.debug(data)
 
+    # we can receive messages in UCS2 so we try to decode them
+    message = "{}".format( data['text'] )
+    messageclean = re.sub( '\W+','', data['text'] )
+    try:
+        czyucs = binascii.unhexlify(messageclean).decode('utf-16-be')
+        message += "\n\n"
+        message += czyucs
+    except Exception as e:
+        current_app.logger.info(e)
+
     msg = Message(
             "Arduino SMS from {}".format(data['number']),
             sender='motracker@random.re',
             )
     msg.add_recipient("motracker@random.re")
-    msg.body = "{}".format(data['text'])
+    msg.body = "{}".format(message)
     mail.send(msg)
 
     return "OK"
