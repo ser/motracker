@@ -9,13 +9,13 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import login_required, login_user, logout_user
+from flask_login import current_user, login_required, login_user, logout_user
 
 from motracker.extensions import login_manager, ws
 from motracker.public.forms import LoginForm
 from motracker.user.forms import RegisterForm
 from motracker.user.models import User
-from motracker.utils import flash_errors
+from motracker.utils import flash_errors, track_live
 
 import redis
 import time
@@ -33,7 +33,7 @@ def load_user(user_id):
 def home():
     """Home page."""
     form = LoginForm(request.form)
-    current_app.logger.info("Hello from the home page!")
+    current_app.logger.debug("Hello from the home page!")
     # Handle logging in
     if request.method == "POST":
         if form.validate_on_submit():
@@ -43,7 +43,12 @@ def home():
             return redirect(redirect_url)
         else:
             flash_errors(form)
-    return render_template("public/home.html", form=form)
+    if current_user.get_id():
+        current_user_live_track = track_live(current_user.get_id())
+    else:
+        current_user_live_track = None
+    return render_template("public/home.html", form=form,
+                           current_user_live_track=current_user_live_track)
 
 
 @blueprint.route("/logout/")

@@ -130,3 +130,19 @@ def track2svgpoints(track_id):
         data += "</svg>"
         current_app.logger.debug(data)
         return data
+
+def track_live(user_id):
+    """Checks if  user has live tracks atm."""
+
+    sql = text(
+        "SELECT * from tracks WHERE user_id = {} AND date(start) = '{}'".format(
+            user_id,
+            datetime.utcnow().date()
+        ))
+    #current_app.logger.debug(sql)
+    result = db.session.execute(sql)
+    trackdb = result.fetchall()
+    #current_app.logger.debug(trackdb)
+    lasttrack = trackdb[0]
+    #current_app.logger.debug(lasttrack)
+    return lasttrack.rid

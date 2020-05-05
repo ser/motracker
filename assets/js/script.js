@@ -36,10 +36,19 @@
             })
         });
 
+        // lastmarker.bindPopup("ALA").openPopup();
+
         // loading geoJSON
-        var map = L.map('gnssmap'),
-            realtime = L.realtime(`/gnss/jsonp/1/${trackrid}`, {
-                start: false
+        var map = L.map('gnssmap');
+        var realtime = L.realtime(`/gnss/jsonp/1/${trackrid}`, {
+            start: false,
+            onEachFeature: function (feature, layer) {
+                var pinus = "Speed: ";
+                var pinus = pinus + feature.properties.speed;
+                console.log(pinus);
+                var popap = layer.bindPopup(pinus);
+                console.log(feature.properties);
+            }
         }).addTo(map);
 
         // https://opentopomap.org/

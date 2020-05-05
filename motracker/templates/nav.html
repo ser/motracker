@@ -10,6 +10,9 @@
     <ul class="navbar-nav mr-auto">
       <li class="nav-item active">
         {% if current_user and current_user.is_authenticated %}
+          {% if current_user_live_track %}
+          <a class="nav-link" href="{{ url_for('gpsdb.realtime', track_rid=current_user_live_track) }}"><span class="badge badge-danger badge-pill">LIVE!</span> </a> </li><li>
+          {% endif %}
           <a class="nav-link" href="{{ url_for('user.userpage', username=current_user.username) }}"><span class="badge badge-secondary badge-pill">Your data</span>
         {% endif %}
           <span class="sr-only">(current)</span>
