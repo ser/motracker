@@ -293,8 +293,8 @@ def realtime(track_rid):
             )
 
 
-@blueprint.route("/gnss/json/<string:track_rid>")
-def geojson(track_rid):
+@blueprint.route("/gnss/json/<string:track_rid>/<string:limit>")
+def geojson(track_rid, limit):
     """Sends a GeoJSON built from a track."""
     # fake response is the same for all cases
     fakeresponse = current_app.response_class(
@@ -322,14 +322,27 @@ def geojson(track_rid):
         # sql = text('SELECT ST_AsGeoJSON(ST_MakeLine(ST_Transform(points.geom,4326) ORDER BY points.timez),6) \
         #        FROM points WHERE points.track_id = {};'.format(track_id))
 
-        sql = text(
-            "SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
-                   FROM points WHERE track_id = {}) as subq".format(
-                r1.id
-            )
-        )
+        if limit == "0":
+            # this version is faster
+            sql = text(
+                "SELECT ST_AsGeoJSON(subq.*) as geojson FROM (SELECT ST_MakeLine(geom ORDER BY timez)\
+                FROM points WHERE track_id = {}) as subq".format(
+                r1.id,
+            ))
+        else:
+            # this version is slower
+            sql = text("\
+                SELECT ST_AsGeoJSON(subq.*) FROM ( \
+                    SELECT ST_MakeLine(geom) FROM \
+                        (SELECT geom FROM points WHERE points.track_id = {} ORDER BY points.timez DESC LIMIT {}) \
+                    AS aliass \
+                ) as subq".format(
+                    r1.id,
+                    limit
+                ))
         result = db.session.execute(sql)
         trackjson = result.fetchone()  # TODO: maybe .fetchall() some day?
+        current_app.logger.debug(sql)
         current_app.logger.debug(trackjson)
         data = '{"type":"FeatureCollection","features":[' + trackjson[0] + "]}"
         response = current_app.response_class(

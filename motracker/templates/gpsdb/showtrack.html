@@ -11,7 +11,7 @@
             <li class="breadcrumb-item">{{ track_rid }}</li>
             <li class="breadcrumb-item">{{ trackname }}</li>
             <li class="breadcrumb-item">{{ trackdesc }}</li>
-            <li class="breadcrumb-item"><a href={{ url_for('gpsdb.geojson', track_rid=track_rid)}}>[GeoJSON]</a></li>
+            <li class="breadcrumb-item"><a href={{ url_for('gpsdb.geojson', track_rid=track_rid, limit='0' )}}>[GeoJSON]</a></li>
         </ol>
         <div class="row">
             <div class="col-sm">

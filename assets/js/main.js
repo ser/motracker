@@ -7,11 +7,13 @@
 // JavaScript modules
 require('@fortawesome/fontawesome-free');
 require('jquery');
+require('moment');
 require('popper.js');
 require('bootstrap');
 require('bricklayer');
 require('leaflet');
 require('leaflet-extra-markers');
+require('leaflet-ajax');
 require('leaflet-realtime');
 
 // Your own code

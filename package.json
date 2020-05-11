@@ -24,6 +24,7 @@
   "homepage": "https://github.com/ser/motracker#readme",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.9.0",
+    "bootstrap-icons": "",
     "bootstrap": "^4.3.1",
     "bootswatch": "^4.3.1",
     "bricklayer": "^0.4.3",
@@ -32,7 +33,10 @@
     "popper.js": "^1.15.0",
     "leaflet": "^1.5.1",
     "leaflet-extra-markers": "^1.1.0",
-    "leaflet-realtime": "^2.1.3"
+    "leaflet-realtime": "^2.1.3",
+    "leaflet-ajax": "",
+    "moment": "",
+    "moment-locales-webpack-plugin": ""
   },
   "devDependencies": {
     "@babel/core": "^7.4.5",

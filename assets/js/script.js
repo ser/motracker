@@ -17,7 +17,7 @@
             }
 
             ws.onmessage = function(evt) {
-                console.log(evt.data);
+                // console.log(evt.data);
                 if (evt.data == "UP") { realtime.update(); }
             }
 
@@ -40,19 +40,34 @@
 
         // loading geoJSON
         var map = L.map('gnssmap');
-        var realtime = L.realtime(`/gnss/jsonp/1/${trackrid}`, {
+        var realtime = L.realtime(`/gnss/jsonp/5/${trackrid}`, {
             start: false,
             onEachFeature: function (feature, layer) {
-                var pinus = "Speed: ";
-                var pinus = pinus + feature.properties.speed;
-                console.log(pinus);
-                var popap = layer.bindPopup(pinus);
+                var speed = "Speed: ";
+                speed = speed + feature.properties.speed;
+                //console.log(speed);
+                altitude = "Altitude: ";
+                altitude = altitude + feature.properties.altitude;
+                var sat = "Sattelites: ";
+                sat = sat + feature.properties.sat
+                var popap = layer.bindPopup(speed+"\n"+altitude);
                 console.log(feature.properties);
+                $('#speed').html( speed );
+                $('#altitude').html( altitude );
+                $('#satt').html( sat );
+                $('#name').html( feature.properties.comment );
+                //var k =  moment( feature.properties.timez ).fromNow();
+                //console.log(moment().format());
+                $('#when').html( feature.properties.timez );
             }
         }).addTo(map);
 
+        //var realine = L.geoJSON.AJAX('/gnss/json/${trackrid}/5').addTo(map);
+        var realine = L.geoJson.ajax().addTo(map);
+        realine.addUrl(`/gnss/json/${trackrid}/5`);
+
         // https://opentopomap.org/
-        // var osmUrl='https://{a|b|c}.tile.opentopomap.org/{z}/{x}/{y}.png';
+        //var osmUrl='https://{a|b|c}.tile.opentopomap.org/{z}/{x}/{y}.png';
 
         // https://manage.thunderforest.com/dashboard
         var osmUrl='https://tile.thunderforest.com/outdoors/{z}/{x}/{y}.png?apikey=4c4eaae4021441eea631ed97ed487943';
@@ -74,13 +89,14 @@
         realtime.on('update', function() {
             map.fitBounds(realtime.getBounds(), {maxZoom: 17});
             $('.leaflet-control-attribution').hide();
+            realine.refresh();
         });
     }
 
     function initmap() {
         var map;
         var geotrack = $.ajax({
-            url: `/gnss/json/${trackrid}`,
+            url: `/gnss/json/${trackrid}/0`,
             dataType: 'json',
             success: console.log('Track data successfully loaded.'),
             error: function (xhr) {
@@ -134,13 +150,14 @@ var bbox = all[i].getBBox();
 var viewBox;
 
 if(bbox.width > bbox.height){
-viewBox = [bbox.x, bbox.y - (bbox.width - bbox.height)/2, bbox.width, bbox.width].join(" ")
+    viewBox = [bbox.x, bbox.y - (bbox.width - bbox.height)/2, bbox.width, bbox.width].join(" ")
 } else if (bbox.width < bbox.height){
-viewBox = [bbox.x - (bbox.height - bbox.width)/2, bbox.y, bbox.height, bbox.height].join(" ")
+    viewBox = [bbox.x - (bbox.height - bbox.width)/2, bbox.y, bbox.height, bbox.height].join(" ")
 } else {
-viewBox - [bbox.x, bbox.y, bbox.width, bbox.height].join(" ");
+    viewBox - [bbox.x, bbox.y, bbox.width, bbox.height].join(" ");
 }
 all[i].setAttribute("viewBox", viewBox);
 console.log(viewBox);
-}
 
+
+}

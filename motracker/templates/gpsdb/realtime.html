@@ -9,8 +9,12 @@
     <div class="container-fluid">
         <ol class="breadcrumb bg-dark">
             <li class="breadcrumb-item active"><span class="badge badge-primary"><a href={{ url_for('user.userpage', username=username) }}>{{ username }}</a></span></li>
-            <li class="breadcrumb-item">{{ device }}</li>
+            <li id="name" class="breadcrumb-item"></li>
             <li class="breadcrumb-item">realtime</li>
+            <li id="speed" class="breadcrumb-item"></li>
+            <li id="altitude" class="breadcrumb-item"></li>
+            <li id="satt" class="breadcrumb-item"></li>
+            <li id="when" class="breadcrumb-item"></li>
         </ol>
         <div class="row">
             <div class="col-sm">

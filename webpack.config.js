@@ -6,6 +6,7 @@ const webpack = require('webpack');
  */
 const ManifestRevisionPlugin = require('manifest-revision-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
 
 // take debug mode from the environment
 const debug = (process.env.NODE_ENV !== 'production');
@@ -77,6 +78,9 @@ module.exports = {
     ],
   },
   plugins: [
+    new MomentLocalesPlugin({
+      localesToKeep: ['en', 'pl'],
+    }),
     new MiniCssExtractPlugin({ filename: '[name].[hash].css', }),
     new webpack.ProvidePlugin({ $: 'jquery', jQuery: 'jquery' }),
     new ManifestRevisionPlugin(path.join(__dirname, 'motracker', 'webpack', 'manifest.json'), {
